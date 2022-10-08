@@ -52,4 +52,4 @@ services:
       - postgres
     env_file:
       - ./server/.env
-    command: ["npm", "migrate:all"]
+    command: ["npm", "run", "migrate:all"]

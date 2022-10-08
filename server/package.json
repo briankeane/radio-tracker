@@ -6,6 +6,13 @@
   "scripts": {
     "test": "env-cmd -f .env-test mocha \"./{,!(node_modules)/**}/*.test.js\" --recursive --exit",
     "test:watch": "env-cmd -f .env-test mocha \"./{,!(node_modules)/**}/*.test.js\" --watch --recursive --exit",
+    "migrate": "sequelize db:migrate",
+    "migrate:test": "env-cmd -f .env-test sequelize db:migrate",
+    "migrate:all": "npm run migrate && npm run migrate:test",
+    "migration:create": "sequelize migration:generate",
+    "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run migrate:test",
+    "db:drop:test": "env-cmd -f .env-test sequelize db:drop",
+    "db:create:test": "env-cmd -f .env-test sequelize db:create",
     "start": "node server.js --experimental-specifier-resolution=node"
   },
   "repository": {
@@ -19,6 +26,7 @@
   },
   "homepage": "https://github.com/briankeane/playola#readme",
   "dependencies": {
+    "axios": "^0.22.0",
     "body-parser": "^1.20.1",
     "compression": "^1.7.4",
     "express": "^4.18.1",
@@ -32,11 +40,14 @@
     "sequelize-cli": "^6.5.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^7.5.0",
     "chai": "^4.3.6",
     "env-cmd": "^10.1.0",
     "eslint": "^8.25.0",
     "mocha": "^10.0.0",
+    "nock": "^13.2.9",
     "nodemon": "^2.0.20",
+    "sinon": "^14.0.1",
     "supertest": "^6.3.0"
   }
 }

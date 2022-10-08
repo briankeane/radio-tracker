@@ -1,5 +1,5 @@
-import Sequelize from "sequelize";
-import logger from "../logger";
+const Sequelize = require("sequelize");
+const logger = require("../logger");
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   logging: process.env.NODE_ENV === "test" ? false : logger.log,
@@ -7,4 +7,4 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
 
 const models = {};
 
-export { sequelize, sequelize as db, models };
+module.exports = { sequelize, db: sequelize, models };

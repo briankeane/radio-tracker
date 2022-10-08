@@ -1,11 +1,11 @@
-import bodyParser from "body-parser";
-import compression from "compression";
-import express from "express";
-import bearerToken from "express-bearer-token";
-import http from "http";
-import addRoutes from "./api/routes.js";
-import morgan from "morgan";
-import { sequelize } from "./db";
+const bodyParser = require("body-parser");
+const compression = require("compression");
+const express = require("express");
+const bearerToken = require("express-bearer-token");
+const http = require("http");
+const { addRoutes } = require("./api/routes.js");
+const morgan = require("morgan");
+const { sequelize } = require("./db");
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -33,12 +33,19 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
 
-Promise.all([sequelize.sync()]).then(() => {
-  app.isReady = true;
-  app.emit("READY");
+app.isReadyPromise = new Promise((resolve, reject) => {
+  return Promise.all([sequelize.sync()])
+    .then(() => {
+      return resolve();
+    })
+    .catch((err) => console.log(err));
 });
 
 const server = http.createServer(app);
 addRoutes(app);
 
-server.listen(port);
+if (require.main === module) {
+  server.listen(port);
+}
+
+exports = module.exports = app;

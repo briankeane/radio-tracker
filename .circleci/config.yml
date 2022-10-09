@@ -23,5 +23,5 @@ jobs:
       - checkout
       - run: touch ./server/.env # env files have to exist for docker-compose to work
       - run: docker-compose run server npx env-cmd -f .env-test sequelize-cli db:migrate
-      - run: docker-compose run server yarn test
-      - run: docker-compose run server yarn lint
+      - run: docker-compose run server npm test
+      - run: docker-compose run server npm run lint

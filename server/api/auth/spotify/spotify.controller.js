@@ -32,7 +32,6 @@ async function swap(req, res, next) {
     }
     return res.status(200).json(body);
   } catch (err) {
-    console.log("error", err);
     logger.error(err);
     return res.status(400).json(err);
   }

@@ -60,7 +60,7 @@ api.interceptors.response.use(
       error.code === "ECONNREFUSED" ||
       error.code === "ETIMEDOUT"
     ) {
-      return performExponentialBackoff(api, error);
+      return exponentialBackoff(api, error);
     }
     return Promise.reject(error);
   }

@@ -6,6 +6,7 @@ const http = require("http");
 const { addRoutes } = require("./api/routes.js");
 const morgan = require("morgan");
 const { sequelize } = require("./db");
+const logger = require("./logger");
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -39,7 +40,7 @@ app.isReadyPromise = new Promise((resolve, reject) => {
     .then(() => {
       return resolve();
     })
-    .catch((err) => console.log(err));
+    .catch((err) => logger.error(err));
 });
 
 const server = http.createServer(app);

@@ -28,6 +28,7 @@ app.all("*", function (req, res, next) {
 app.use(bearerToken());
 app.use(compression());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));

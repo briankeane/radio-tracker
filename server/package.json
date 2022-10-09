@@ -13,6 +13,7 @@
     "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run migrate:test",
     "db:drop:test": "env-cmd -f .env-test sequelize db:drop",
     "db:create:test": "env-cmd -f .env-test sequelize db:create",
+    "lint": "eslint .",
     "start": "node server.js --experimental-specifier-resolution=node"
   },
   "repository": {

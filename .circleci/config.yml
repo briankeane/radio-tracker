@@ -1,0 +1,27 @@
+version: 2.1
+
+orbs:
+  heroku: circleci/heroku@1.2.3 # Invoke the Heroku orb
+
+workflows:
+  heroku_deploy:
+    jobs:
+      - build
+      - heroku/deploy-via-git: # Use the pre-configured job, deploy-via-git
+          requires:
+            - build
+          filters:
+            branches:
+              only: develop
+
+jobs:
+  build:
+    machine: true
+    working_directory: ~/src
+
+    steps:
+      - checkout
+      - run: touch ./server/.env # env files have to exist for docker-compose to work
+      - run: docker-compose run server npx env-cmd -f .env-test sequelize-cli db:migrate
+      - run: docker-compose run server npm test
+      - run: docker-compose run server npm run lint

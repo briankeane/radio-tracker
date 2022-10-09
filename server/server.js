@@ -7,7 +7,7 @@ const { addRoutes } = require("./api/routes.js");
 const morgan = require("morgan");
 const { sequelize } = require("./db");
 const logger = require("./logger");
-const EventStream = require("./lib/events/eventStream.js");
+const EventStream = require("./lib/events/EventStream.js");
 
 const port = process.env.PORT || 3000;
 const app = express();

@@ -13,23 +13,6 @@ class EventStream {
     return Promise.resolve();
   }
 
-  connectWithRetry(callback) {
-    return new Promise((resolve, reject) => {
-      this._retryCallback = callback;
-      this.connect()
-        .then(() => {
-          if (this._retryCallback) {
-            this._retryCallback();
-          }
-          resolve();
-        })
-        .catch((err) => {
-          logger.log("Error connecting to eventStream.  Retrying after 1 sec");
-          logger.log(err);
-          setTimeout(this.connectWithRetry, 1000);
-        });
-    });
-  }
   subscribe(event, handler) {
     logger.log("subscribe stub");
   }

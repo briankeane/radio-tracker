@@ -7,7 +7,7 @@ const { addRoutes } = require("./api/routes.js");
 const morgan = require("morgan");
 const { sequelize } = require("./db");
 const logger = require("./logger");
-const EventStream = require("./lib/events/EventStream.js");
+const eventStream = require("./lib/events");
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -36,7 +36,6 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
 
-const eventStream = new EventStream("web");
 function subscriptionCallback() {
   logger.log("ToDo: Subscribe for events here");
 }

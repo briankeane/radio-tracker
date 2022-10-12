@@ -1,9 +1,9 @@
 const eventStream = require("./lib/events");
 const eventHandlers = require("./lib/events/handlers");
-const logger = require("./lib/logger");
+const logger = require("./logger");
 
 eventStream
-  .connect()
+  .connectWithRetry()
   .then(() => {
     eventHandlers.subscribe();
     logger.log("Worker Started");

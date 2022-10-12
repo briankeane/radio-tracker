@@ -108,8 +108,7 @@ describe("User", function () {
     });
 
     describe("StationSongs", function () {
-      // let stationSongs, songs;
-      let songs;
+      let stationSongs, songs;
 
       beforeEach(async function () {
         const result = await createStationSongsWithSongs(db, {

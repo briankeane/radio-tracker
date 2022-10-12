@@ -32,19 +32,19 @@ app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-if (process.env.NODE_ENV !== "test") {
-  app.use(morgan("dev"));
-}
-
 function subscriptionCallback() {
   logger.log("ToDo: Subscribe for events here");
 }
 
+let setupPromises = [sequelize.sync()];
+
+if (process.env.NODE_ENV !== "test") {
+  app.use(morgan("dev"));
+  setupPromises.push(eventStream.connectWithRetry(subscriptionCallback));
+}
+
 app.isReadyPromise = new Promise((resolve, reject) => {
-  return Promise.all([
-    sequelize.sync(),
-    eventStream.connectWithRetry(subscriptionCallback),
-  ])
+  return Promise.all(setupPromises)
     .then(() => {
       return resolve();
     })

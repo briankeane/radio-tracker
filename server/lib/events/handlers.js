@@ -1,0 +1,25 @@
+const { USER_CREATED } = require("./events");
+const eventStream = require("./EventStream");
+const logger = require("../../logger");
+const db = require("../../db");
+const lib = require("../lib");
+
+/*
+ * When a user is created, created their songs and StationSongs
+ */
+const onUserCreated = ({ user }) => {
+  db.models.User.findByPk(user.id)
+    .then((foundUser) => lib.initializeSongsForUser({ user: foundUser }))
+    .catch((err) => logger.error(err));
+};
+
+/*
+ * Api
+ */
+const subscribe = () => {
+  eventStream.allEvents.subscribe(USER_CREATED, onUserCreated);
+};
+
+module.exports = {
+  subscribe,
+};

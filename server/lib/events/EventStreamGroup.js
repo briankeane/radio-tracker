@@ -1,5 +1,9 @@
 const logger = require("../../logger");
 
+const delay = (t, v) => {
+  return new Promise((resolve) => setTimeout(resolve, t, v));
+};
+
 class EventStreamGroup {
   constructor(streams) {
     for (let stream of streams) {
@@ -27,23 +31,16 @@ class EventStreamGroup {
     });
   }
 
-  connectWithRetry(callback) {
-    return new Promise((resolve, reject) => {
-      this.connect()
-        .then(() => {
-          if (callback) {
-            callback();
-          }
-          return resolve();
-        })
-        .catch((err) => {
-          logger.log("Error connecting to eventStream.  Retrying after 1 sec");
-          logger.log(err);
-          setTimeout(() => {
-            this.connectWithRetry(callback);
-          }, 1000);
-        });
-    });
+  connectWithRetry() {
+    return this.connect()
+      .then(() => {
+        logger.log("Connected to Event Stream");
+      })
+      .catch((err) => {
+        logger.log("Error connecting to eventStream.  Retrying after 1 sec");
+        logger.log(err);
+        return delay(1000).then(this.connectWithRetry.bind(this));
+      });
   }
 }
 

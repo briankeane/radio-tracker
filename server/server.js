@@ -7,6 +7,7 @@ const { addRoutes } = require("./api/routes.js");
 const morgan = require("morgan");
 const { sequelize } = require("./db");
 const logger = require("./logger");
+const eventStream = require("./lib/events");
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -31,12 +32,19 @@ app.use(compression());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+function subscriptionCallback() {
+  logger.log("ToDo: Subscribe for events here");
+}
+
+let setupPromises = [sequelize.sync()];
+
 if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
+  setupPromises.push(eventStream.connectWithRetry(subscriptionCallback));
 }
 
 app.isReadyPromise = new Promise((resolve, reject) => {
-  return Promise.all([sequelize.sync()])
+  return Promise.all(setupPromises)
     .then(() => {
       return resolve();
     })

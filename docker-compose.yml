@@ -17,6 +17,16 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pass
 
+  rabbitmq:
+    container_name: "rabbitmq"
+    image: rabbitmq:3-management
+    ports:
+      - "8080:5672"
+    environment:
+      RABBITMQ_DEFAULT_PASS: pass
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_VHOST: vhost
+
   server:
     container_name: "server"
     build:
@@ -34,10 +44,33 @@ services:
       - redis
       - postgres
       - migrate
+      - rabbitmq
     env_file:
       - ./server/.env
     command:
       ["npm", "start"]
+
+  worker:
+    container_name: "worker"
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:10030:10030"
+    expose:
+      - 9229
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - redis
+      - postgres
+      - migrate
+      - rabbitmq
+    env_file:
+      - ./server/.env
+    command:
+      ["node", "worker.js"]
 
   migrate:
     container_name: "migrate"

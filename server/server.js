@@ -36,7 +36,7 @@ function subscriptionCallback() {
   logger.log("ToDo: Subscribe for events here");
 }
 
-let setupPromises = [sequelize.sync()];
+let setupPromises = [sequelize.sync().then(sequelize.authenticate())];
 
 if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));

@@ -5,6 +5,7 @@ const sequelize = new Sequelize(dbConfig.url, {
   ...dbConfig,
   logger,
 });
+console.log("dbConfig: ", dbConfig);
 class User extends Model {
   jwtRepr() {
     return {

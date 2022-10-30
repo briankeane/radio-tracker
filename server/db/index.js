@@ -1,8 +1,6 @@
 const Sequelize = require("sequelize");
 const logger = require("../logger");
 const dbConfig = require("./config")[process.env.NODE_ENV];
-console.log("dbConfig.dialectOptions: ", dbConfig.dialectOptions);
-dbConfig.dialectOptions.ssl.rejectUnauthorized = false;
 const sequelize = new Sequelize(dbConfig.url, {
   ...dbConfig,
   logger,

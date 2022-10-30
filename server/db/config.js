@@ -19,7 +19,7 @@ module.exports = {
     database: process.env.DATABASE_URL.split("/").slice(-1)[0],
   },
   production: {
-    url: `${process.env.DATABASE_URL}?ssl=true`,
+    url: `${process.env.DATABASE_URL}`,
     dialect: "postgres",
     ssl: true,
     dialectOptions: {

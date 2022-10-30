@@ -14,7 +14,9 @@
     "db:drop:test": "env-cmd -f .env-test sequelize db:drop",
     "db:create:test": "env-cmd -f .env-test sequelize db:create",
     "lint": "eslint .",
-    "start": "node server.js --experimental-specifier-resolution=node"
+    "start": "node server.js --experimental-specifier-resolution=node",
+    "dev": "nodemon -L server.js",
+    "debug": "nodemon --inspect=0.0.0.0:9229 -L server.js"
   },
   "repository": {
     "type": "git",

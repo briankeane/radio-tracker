@@ -15,6 +15,7 @@ module.exports = {
   test: {
     url: process.env.DATABASE_URL,
     dialect: "postgres",
+    logging: false,
     database: process.env.DATABASE_URL.split("/").slice(-1)[0],
   },
   production: {

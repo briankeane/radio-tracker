@@ -48,7 +48,7 @@ services:
     env_file:
       - ./server/.env
     command:
-      ["npm", "start"]
+      ["npm", "run", "dev"]
 
   worker:
     container_name: "worker"

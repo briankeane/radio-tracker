@@ -1,9 +1,10 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const logger = require("../../../logger");
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  logging: logger.log,
+const dbConfig = require("../../config")[process.env.NODE_ENV];
+const sequelize = new Sequelize(dbConfig.url, {
+  ...dbConfig,
+  logger,
 });
-
 const StationSong = sequelize.define("stationSong", {
   id: {
     type: DataTypes.UUID,

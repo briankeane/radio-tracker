@@ -126,4 +126,23 @@ describe("SongChooser", function () {
       assert.notIncludeMembers([stationSongs[0].song.id], songIdsToRest);
     });
   });
+
+  describe("chooseStationSong", function () {
+    it("rests artists and songs", async function () {
+      let chooser = new SongChooser({ stationSongs });
+      await scheduleSongsAtAirtime({
+        songs: stationSongs.slice(1, 60).map((ss) => ss.song),
+        airtime: new Date(2015, 3, 15, 12),
+      });
+      await scheduleArtistsAtAirtime({
+        artists: stationSongs.slice(60).map((ss) => ss.song.artist),
+        airtime: new Date(2015, 3, 15, 12, 30),
+      });
+
+      let chosenStationSong = await chooser.chooseSong({
+        airtime: new Date(2015, 3, 15, 12, 31),
+      });
+      assert.equal(chosenStationSong.id, stationSongs[0].id);
+    });
+  });
 });

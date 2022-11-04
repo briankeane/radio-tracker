@@ -98,6 +98,77 @@ class SongChooser {
     });
     return spins.map((spin) => spin.audioBlockId);
   }
+
+  async chooseSong({ airtime }) {
+    let airtimeMoment = moment(airtime);
+    // get a list of artists that have been played recently
+    let artistsToRest = await this.getArtistsToRest({ airtimeMoment });
+    let songIdsToRest = await this.getSongIdsToRest({ airtimeMoment });
+    let usableSongs = await db.models.StationSong.findAll({
+      where: {
+        userId: this.userId,
+        songId: { [Op.notIn]: songIdsToRest },
+      },
+      order: [[{ model: db.models.Song, as: "song" }, "popularity", "DESC"]],
+      include: [
+        {
+          model: db.models.Song,
+          as: "song",
+          where: { artist: { [Op.notIn]: artistsToRest } },
+        },
+      ],
+    });
+
+    if (!usableSongs.length) {
+      logger.log(`No usable stationSongs for userId: ${this.userId}`);
+      return randomElement(this.stationSongs).song;
+    }
+
+    let preferredPopularityLevel = await this.preferredPopularityLevel();
+    var highPopularity = [];
+    var lowPopularity = [];
+    for (let i = 0; i < usableSongs.length; i++) {
+      if (usableSongs[i].popularity >= this.popularityLowerBounds) {
+        highPopularity.push(usableSongs[i]);
+      } else {
+        lowPopularity.push(usableSongs[i]);
+      }
+    }
+    if (
+      preferredPopularityLevel === POPULARITY_LEVELS.HIGH &&
+      highPopularity.length
+    ) {
+      return randomElement(highPopularity);
+    } else if (lowPopularity.length) {
+      return randomElement(lowPopularity);
+    } else {
+      return randomElement(usableSongs);
+    }
+  }
+
+  /*
+   * If the last 4 songs have been popular, try something
+   * less popular.  Otherwise stick with popular
+   */
+  async preferredPopularityLevel() {
+    let lastSeveralSpins = await db.models.Spin.findAll({
+      where: { userId: this.userId },
+      order: [["playlistPosition", "DESC"]],
+      include: [{ model: db.models.AudioBlock, where: { type: "song" } }],
+      limit: 4,
+    });
+
+    for (let spin of lastSeveralSpins) {
+      if (spin.audioBlock.popularity < this.popularityLowerBounds) {
+        return POPULARITY_LEVELS.HIGH;
+      }
+      return POPULARITY_LEVELS.LOW;
+    }
+  }
+}
+
+function randomElement(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 module.exports = SongChooser;

@@ -46,12 +46,14 @@
   "devDependencies": {
     "@faker-js/faker": "^7.5.0",
     "chai": "^4.3.6",
+    "chai-moment": "^0.1.0",
     "env-cmd": "^10.1.0",
     "eslint": "^8.25.0",
     "mocha": "^10.0.0",
     "nock": "^13.2.9",
     "nodemon": "^2.0.20",
     "sinon": "^14.0.1",
-    "supertest": "^6.3.0"
+    "supertest": "^6.3.0",
+    "timekeeper": "^2.2.0"
   }
 }

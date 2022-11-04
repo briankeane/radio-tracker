@@ -3,6 +3,7 @@ const db = require("../..");
 const { clearDatabase } = require("../../../test/test.helpers");
 const { createUser, createSong } = require("../../../test/testDataGenerator");
 const moment = require("moment");
+
 describe("Spin Model", function () {
   var user, songs, spins;
 

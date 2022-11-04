@@ -87,4 +87,43 @@ describe("SongChooser", function () {
       assert.equal(chooser.userId, user.id);
     });
   });
+
+  describe("artistsToRest", function () {
+    it("provides a list of artists to rest", async function () {
+      await scheduleArtistsAtAirtime({
+        artists: stationSongs.slice(1).map((ss) => ss.song.artist),
+        airtime: new Date(2015, 3, 15, 12, 30),
+      });
+      let chooser = new SongChooser({ stationSongs });
+      let artistsToRest = await chooser.getArtistsToRest({
+        airtimeMoment: moment(new Date(2015, 3, 15, 12, 31)),
+      });
+      assert.sameMembers(
+        stationSongs
+          .slice(1)
+          .map((ss) => ss.song.artist)
+          .sort(),
+        artistsToRest.sort()
+      );
+      assert.notIncludeMembers([stationSongs[0].song.artist], artistsToRest);
+    });
+  });
+
+  describe("songsToRest", function () {
+    it("provides a list of songIds to rest", async function () {
+      let chooser = new SongChooser({ stationSongs });
+      await scheduleSongsAtAirtime({
+        songs: stationSongs.slice(1).map((ss) => ss.song),
+        airtime: new Date(2015, 3, 15, 12),
+      });
+      let songIdsToRest = await chooser.getSongIdsToRest({
+        airtimeMoment: moment(new Date(2015, 3, 15, 12, 31)),
+      });
+      assert.includeMembers(
+        stationSongs.slice(1).map((ss) => ss.song.id),
+        songIdsToRest
+      );
+      assert.notIncludeMembers([stationSongs[0].song.id], songIdsToRest);
+    });
+  });
 });

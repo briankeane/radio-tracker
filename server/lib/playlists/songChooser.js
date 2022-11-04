@@ -48,6 +48,56 @@ class SongChooser {
   get stationSongs() {
     return this._stationSongs;
   }
+
+  async getArtistsToRest({ airtimeMoment }) {
+    let spins = await db.models.Spin.findAll({
+      where: {
+        userId: this.userId,
+        airtime: {
+          [Op.between]: [
+            airtimeMoment
+              .clone()
+              .subtract(ARTIST_MINIMUM_REST_MINUTES, "minutes")
+              .toDate(),
+            airtimeMoment.toDate(),
+          ],
+        },
+      },
+      include: [
+        {
+          model: db.models.AudioBlock,
+          as: "audioBlock",
+          where: { type: "song" },
+        },
+      ],
+    });
+    return spins.map((spin) => spin.audioBlock.artist);
+  }
+
+  async getSongIdsToRest({ airtimeMoment }) {
+    let spins = await db.models.Spin.findAll({
+      where: {
+        userId: this.userId,
+        airtime: {
+          [Op.between]: [
+            airtimeMoment
+              .clone()
+              .subtract(SONG_MINIMUM_REST_MINUTES, "minutes")
+              .toDate(),
+            airtimeMoment.toDate(),
+          ],
+        },
+      },
+      include: [
+        {
+          model: db.models.AudioBlock,
+          as: "audioBlock",
+          where: { type: "song" },
+        },
+      ],
+    });
+    return spins.map((spin) => spin.audioBlockId);
+  }
 }
 
 module.exports = SongChooser;

@@ -15,6 +15,7 @@ const {
   createSong,
   createPlayolaSongSeeds,
   createStationSongsWithSongs,
+  createSpinsWithSongs,
   createSpotifyUser,
 } = require("../test/testDataGenerator");
 const encryption = require("./spotify/spotify.encryption");
@@ -105,6 +106,56 @@ describe("User library functions", function () {
         let user = await createUser(db);
         let foundUser = await lib.getUser({ userId: user.id });
         assert.equal(foundUser.id, user.id);
+      });
+
+      it("GETS a user with a playlist", async function () {
+        let user = await createUser(db);
+        let { spins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 3,
+          startingAirtime: new Date(new Date().getTime() - 5 * 60 * 1000),
+        });
+        let foundUser = await lib.getUser({ userId: user.id });
+        assert.ok(foundUser.playlist);
+        assert.equal(foundUser.playlist.length, 3);
+        assert.sameMembers(
+          foundUser.playlist.map((spin) => spin.id),
+          spins.map((spin) => spin.id)
+        );
+      });
+
+      it("only gets within a 30 minute window", async function () {
+        let user = await createUser(db);
+        let { spins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 3,
+          startingAirtime: new Date(new Date().getTime() - 5 * 60 * 1000),
+        });
+        let { spins: tooFarBackSpins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 1,
+          startingAirtime: new Date(new Date().getTime() - 30 * 60 * 1000),
+        });
+        let { spins: tooFarAheadSpins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 1,
+          startingAirtime: new Date(new Date().getTime() + 30 * 60 * 1000),
+        });
+        let foundUser = await lib.getUser({ userId: user.id });
+        assert.ok(foundUser.playlist);
+        assert.equal(foundUser.playlist.length, 3);
+        assert.sameMembers(
+          foundUser.playlist.map((spin) => spin.id),
+          spins.map((spin) => spin.id)
+        );
+        assert.notInclude(
+          tooFarAheadSpins.map((spin) => spin.id),
+          foundUser.playlist.map((spin) => spin.id)
+        );
+        assert.notInclude(
+          tooFarBackSpins.map((spin) => spin.id),
+          foundUser.playlist.map((spin) => spin.id)
+        );
       });
     });
   });

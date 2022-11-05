@@ -12,6 +12,14 @@ const AudioBlock = require("./models/audioBlock.model");
 const StationSong = require("./models/stationSong.model/stationSong.model");
 const Spin = require("./models/spin.model");
 
+function minutesAgo(minutes) {
+  return new Date(new Date().getTime() - minutes * 60 * 1000);
+}
+
+function minutesFromNow(minutes) {
+  return minutesAgo(-minutes);
+}
+
 /*
  * AudioBlock sub-models
  */
@@ -49,7 +57,10 @@ StationSong.findAllActive = async ({ userId }) => {
 
 Spin.getPlaylist = async ({ userId }) => {
   return await Spin.findAll({
-    where: { userId },
+    where: {
+      userId,
+      airtime: { [Sequelize.Op.between]: [minutesAgo(15), minutesFromNow(15)] },
+    },
     order: [["playlistPosition", "ASC"]],
     include: [{ model: AudioBlock }],
   });

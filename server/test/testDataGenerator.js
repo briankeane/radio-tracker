@@ -118,6 +118,29 @@ const createStationSongsWithSongs = async function (db, { count, userId }) {
   return { songs, stationSongs };
 };
 
+const createSpinsWithSongs = async function (
+  db,
+  { count, userId, startingAirtime = null }
+) {
+  var airtime = startingAirtime || new Date();
+  const songs = [];
+  const spins = [];
+  for (let i = 0; i < count; i++) {
+    songs.push(await createSong(db));
+    spins.push(
+      await db.models.Spin.create({
+        userId: userId,
+        audioBlock: songs[0],
+        audioBlockId: songs[0].id,
+        airtime: airtime,
+        playlistPosition: i,
+      })
+    );
+    airtime = new Date(airtime.getTime() + 1000 * 60 * 3);
+  }
+  return { songs, spins };
+};
+
 function randomImageURL() {
   return `${faker.image.image()}/${Math.round(Math.random() * 1000)}`;
 }
@@ -127,6 +150,7 @@ module.exports = {
   createPlayolaSongSeeds,
   createStationSong,
   createStationSongsWithSongs,
+  createSpinsWithSongs,
   createUser,
   createSong,
   createCommercial,

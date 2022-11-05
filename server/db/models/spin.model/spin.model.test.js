@@ -26,7 +26,7 @@ describe("Spin Model", function () {
           playlistPosition: 10 - i, // playlistPostions count down
         })
       );
-      airtime = airtime.add(3, "minutes");
+      airtime = airtime.add(1, "minutes");
     }
   });
 

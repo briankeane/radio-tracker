@@ -27,15 +27,14 @@ const createUserViaSpotifyRefreshToken = async function ({ refreshToken }) {
   return finish(user, created);
 };
 
-const getUser = function ({ userId }) {
-  return new Promise((resolve, reject) => {
-    db.models.User.findByPk(userId)
-      .then((user) => {
-        if (!user) throw new Error(errors.USER_NOT_FOUND);
-        return resolve(user);
-      })
-      .catch((err) => reject(err));
-  });
+const getUser = async function ({ userId }) {
+  let user = await db.models.User.findByPk(userId);
+  if (!user) throw new Error(errors.USER_NOT_FOUND);
+  let playlist = await db.models.Spin.getPlaylist({ userId });
+  if (playlist.length) {
+    user.playlist = playlist;
+  }
+  return user;
 };
 
 const getUsersStationSongs = async function ({ userId }) {
@@ -155,7 +154,7 @@ async function initializeSongsForUser({ user }) {
     include: [{ model: db.models.User }, { model: db.models.Song, as: "song" }],
   });
 
-  return { stationSongs: retrievedStationSongs };
+  return { stationSongs: retrievedStationSongs, user };
 }
 
 /*

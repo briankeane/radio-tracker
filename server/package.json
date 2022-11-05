@@ -10,6 +10,7 @@
     "migrate:test": "env-cmd -f .env-test sequelize db:migrate",
     "migrate:all": "npm run migrate && npm run migrate:test",
     "migration:create": "sequelize migration:generate",
+    "db:reset": "sequelize db:drop && sequelize db:create && npm run migrate",
     "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run migrate:test",
     "db:drop:test": "env-cmd -f .env-test sequelize db:drop",
     "db:create:test": "env-cmd -f .env-test sequelize db:create",
@@ -37,6 +38,7 @@
     "express-bearer-token": "^2.4.0",
     "express-jwt": "^7.7.5",
     "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.4",
     "morgan": "^1.10.0",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
@@ -46,12 +48,14 @@
   "devDependencies": {
     "@faker-js/faker": "^7.5.0",
     "chai": "^4.3.6",
+    "chai-moment": "^0.1.0",
     "env-cmd": "^10.1.0",
     "eslint": "^8.25.0",
     "mocha": "^10.0.0",
     "nock": "^13.2.9",
     "nodemon": "^2.0.20",
     "sinon": "^14.0.1",
-    "supertest": "^6.3.0"
+    "supertest": "^6.3.0",
+    "timekeeper": "^2.2.0"
   }
 }

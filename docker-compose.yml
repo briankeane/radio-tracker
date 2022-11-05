@@ -60,7 +60,9 @@ services:
     expose:
       - 9229
     volumes:
-      - ./server:/usr/src/app
+      - type: bind
+        source: ./server
+        target: /usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       - redis

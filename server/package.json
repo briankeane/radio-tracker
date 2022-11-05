@@ -10,6 +10,7 @@
     "migrate:test": "env-cmd -f .env-test sequelize db:migrate",
     "migrate:all": "npm run migrate && npm run migrate:test",
     "migration:create": "sequelize migration:generate",
+    "db:reset": "sequelize db:drop && sequelize db:create && npm run migrate",
     "db:reset:test": "npm run db:drop:test && npm run db:create:test && npm run migrate:test",
     "db:drop:test": "env-cmd -f .env-test sequelize db:drop",
     "db:create:test": "env-cmd -f .env-test sequelize db:create",

@@ -131,6 +131,7 @@ async function createSongSpin({ userId, playlist, songChooser }) {
     playlistPosition: playlist[playlist.length - 1].playlistPosition + 1,
   };
   spinData.airtime = airtimeForSpin({ currentPlaylist: playlist, spinData });
+
   let spin = await db.models.Spin.create(spinData);
   await spin.reload({ include: [db.models.AudioBlock] });
   return spin;

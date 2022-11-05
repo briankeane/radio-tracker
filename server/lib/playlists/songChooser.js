@@ -104,7 +104,7 @@ class SongChooser {
     // get a list of artists that have been played recently
     let artistsToRest = await this.getArtistsToRest({ airtimeMoment });
     let songIdsToRest = await this.getSongIdsToRest({ airtimeMoment });
-    let usableSongs = await db.models.StationSong.findAll({
+    let usableStationSongs = await db.models.StationSong.findAll({
       where: {
         userId: this.userId,
         songId: { [Op.notIn]: songIdsToRest },
@@ -118,6 +118,8 @@ class SongChooser {
         },
       ],
     });
+
+    let usableSongs = usableStationSongs.map((stationSong) => stationSong.song);
 
     if (!usableSongs.length) {
       logger.log(`No usable stationSongs for userId: ${this.userId}`);

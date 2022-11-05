@@ -155,7 +155,7 @@ async function initializeSongsForUser({ user }) {
     include: [{ model: db.models.User }, { model: db.models.Song, as: "song" }],
   });
 
-  return { stationSongs: retrievedStationSongs };
+  return { stationSongs: retrievedStationSongs, user };
 }
 
 /*

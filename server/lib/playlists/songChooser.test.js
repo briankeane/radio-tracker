@@ -139,10 +139,10 @@ describe("SongChooser", function () {
         airtime: new Date(2015, 3, 15, 12, 30),
       });
 
-      let chosenStationSong = await chooser.chooseSong({
+      let chosenSong = await chooser.chooseSong({
         airtime: new Date(2015, 3, 15, 12, 31),
       });
-      assert.equal(chosenStationSong.id, stationSongs[0].id);
+      assert.equal(chosenSong.id, stationSongs[0].song.id);
     });
   });
 });

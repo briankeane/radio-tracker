@@ -13,11 +13,12 @@ function createUser(req, res) {
 }
 
 function getUser(req, res) {
-  const userId =
-    req.params && req.params.userId === "me" ? req.user.id : req.params.userId;
+  const isSelf = req.params && req.params.userId === "me";
+
+  const userId = isSelf ? req.user.id : req.params.userId;
 
   lib
-    .getUser({ userId })
+    .getUser({ userId, expandedPlaylist: isSelf })
     .then((user) => res.status(200).json(user))
     .catch((err) => APIError.APIResponseFromPlayolaError(err, res));
 }

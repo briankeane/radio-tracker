@@ -18,10 +18,11 @@ class CommercialChooser {
     let audioUrl = audioUrlForIndex(index);
 
     // creates the commercial if it doesn't exist in the db
-    return await db.models.Commercial.findOrCreate({
+    let result = await db.models.Commercial.findOrCreate({
       where: { audioUrl },
-      defaults: { title: "Commercial", artist: "------" },
+      defaults: { title: "Commercial", artist: "------", durationMS: 180000 },
     });
+    return result[0];
   }
 }
 

@@ -116,10 +116,11 @@ describe("User library functions", function () {
           startingAirtime: new Date(new Date().getTime() - 5 * 60 * 1000),
         });
         let foundUser = await lib.getUser({ userId: user.id });
-        assert.ok(foundUser.playlist);
-        assert.equal(foundUser.playlist.length, 3);
+        let foundPlaylist = foundUser.get("playlist");
+        assert.ok(foundPlaylist);
+        assert.equal(foundPlaylist.length, 3);
         assert.sameMembers(
-          foundUser.playlist.map((spin) => spin.id),
+          foundPlaylist.map((spin) => spin.id),
           spins.map((spin) => spin.id)
         );
       });
@@ -142,19 +143,54 @@ describe("User library functions", function () {
           startingAirtime: new Date(new Date().getTime() + 30 * 60 * 1000),
         });
         let foundUser = await lib.getUser({ userId: user.id });
-        assert.ok(foundUser.playlist);
-        assert.equal(foundUser.playlist.length, 3);
+        let foundPlaylist = foundUser.get("playlist");
+        assert.ok(foundPlaylist);
+        assert.equal(foundPlaylist.length, 3);
         assert.sameMembers(
-          foundUser.playlist.map((spin) => spin.id),
+          foundPlaylist.map((spin) => spin.id),
           spins.map((spin) => spin.id)
         );
         assert.notInclude(
           tooFarAheadSpins.map((spin) => spin.id),
-          foundUser.playlist.map((spin) => spin.id)
+          foundPlaylist.map((spin) => spin.id)
         );
         assert.notInclude(
           tooFarBackSpins.map((spin) => spin.id),
-          foundUser.playlist.map((spin) => spin.id)
+          foundPlaylist.map((spin) => spin.id)
+        );
+      });
+
+      it("only gets all future spins if asked for 'extendedPlaylist'", async function () {
+        let user = await createUser(db);
+        let { spins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 3,
+          startingAirtime: new Date(new Date().getTime() - 5 * 60 * 1000),
+        });
+        let { spins: tooFarBackSpins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 1,
+          startingAirtime: new Date(new Date().getTime() - 30 * 60 * 1000),
+        });
+        let { spins: aheadSpins } = await createSpinsWithSongs(db, {
+          userId: user.id,
+          count: 1,
+          startingAirtime: new Date(new Date().getTime() + 30 * 60 * 1000),
+        });
+        let foundUser = await lib.getUser({
+          userId: user.id,
+          extendedPlaylist: true,
+        });
+        let foundPlaylist = foundUser.get("playlist");
+        assert.ok(foundPlaylist);
+        assert.equal(foundPlaylist.length, 4);
+        assert.sameMembers(
+          foundPlaylist.map((spin) => spin.id),
+          spins.map((spin) => spin.id).concat(aheadSpins[0].id)
+        );
+        assert.notInclude(
+          tooFarBackSpins.map((spin) => spin.id),
+          foundPlaylist.map((spin) => spin.id)
         );
       });
     });

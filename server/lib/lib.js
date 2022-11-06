@@ -27,12 +27,15 @@ const createUserViaSpotifyRefreshToken = async function ({ refreshToken }) {
   return finish(user, created);
 };
 
-const getUser = async function ({ userId }) {
+const getUser = async function ({ userId, extendedPlaylist = false }) {
   let user = await db.models.User.findByPk(userId);
   if (!user) throw new Error(errors.USER_NOT_FOUND);
-  let playlist = await db.models.Spin.getPlaylist({ userId });
+  let playlist = await db.models.Spin.getPlaylist({
+    userId,
+    extended: extendedPlaylist,
+  });
   if (playlist.length) {
-    user.playlist = playlist;
+    user.setDataValue("playlist", playlist);
   }
   return user;
 };

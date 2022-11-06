@@ -14,6 +14,7 @@ class User extends Model {
       profileImageUrl: this.profileImageUrl,
       role: this.role,
       spotifyUserId: this.spotifyUserId,
+      playlist: this.playlist,
       deepLink: this.deepLink,
     };
   }

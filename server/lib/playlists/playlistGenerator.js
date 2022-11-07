@@ -12,6 +12,106 @@ const AIRTIME_BLOCK_SIZE_MIN = 30;
 const lengthOfOutroMS = (audioBlock) =>
   audioBlock.endOfMessageMS - audioBlock.beginningOfOutroMS;
 
+async function moveSpin({ spinId, newPlaylistPosition }) {
+  let spinToMove = await db.models.Spin.findByPk(spinId, {
+    include: [
+      {
+        model: db.models.AudioBlock,
+      },
+    ],
+  });
+  let oldPlaylistPosition = spinToMove.playlistPosition;
+  let maxPlaylistPosition = Math.max(oldPlaylistPosition, newPlaylistPosition);
+  let minPlaylistPosition = Math.min(oldPlaylistPosition, newPlaylistPosition);
+  let movingEarlier = maxPlaylistPosition === oldPlaylistPosition;
+  let effectedSpins = await db.models.Spin.findAll({
+    where: {
+      playlistPosition: {
+        [Op.between]: [minPlaylistPosition, maxPlaylistPosition],
+      },
+      order: [["playlistPosition", "ASC"]],
+    },
+  });
+  // grab the min and max indexes
+  var minIndex, maxIndex;
+  for (let [index, spin] of effectedSpin.entries) {
+    // minIndex
+    if (!minIndex && spin.playlistPosition == minPlaylistPosition) {
+      minIndex = index;
+    } else if (spin.playlistPosition === maxPlaylistPosition) {
+      maxIndex = index;
+    }
+  }
+  // rearrange the array
+  if (movingEarlier) {
+    effectedSpins.splice(minIndex, 0, effectedSpins.splice(maxIndex, 1)[0]);
+  } else {
+    effectedSpins.splice(maxIndex, 0, effectedSpins.splice(minIndex, 1)[0]);
+  }
+
+  // correct airtimes, playlistPositions, and commercials
+  await this.reformatSchedule({
+    playlist: effectedSpins,
+  });
+
+  return await db.models.User.getPlaylist({
+    userId: spinToMove.userId,
+    extended: true,
+  });
+}
+
+async function reformatSchedule({ playlistSlice }) {
+  const { userId } = playlistSlice[0];
+  const commercialChooser = new CommercialChooser({ userId });
+
+  var currentAirtimeBlock = getAirtimeBlock(playlistSlice[0].airtime);
+  let playlistPositionTracker = playlistSlice[0].playlistPosition + 1;
+
+  let playlistWithoutCommercials = playlistSlice.filter(
+    (spin) => spin.type !== "commercial"
+  );
+  let commercials = playlistSlice.filter((spin) => spin.type === "commercial");
+
+  var finalPlaylistSlice = [playlistWithoutCommercials[0]];
+
+  for (let i = 1; i < playlistWithoutCommercials.length; i++) {
+    playlistWithoutCommercials[i].playlistPosition = playlistPositionTracker;
+    playlistPositionTracker++;
+
+    playlistWithoutCommercials[i].airtime = airtimeForSpin({
+      currentPlaylist: finalPlaylistSlice,
+      spinData: playlistWithoutCommercials[i],
+    });
+    finalPlaylistSlice.push(playlistWithoutCommercials[i]);
+
+    if (getAirtimeBlock(spinEndMoment(spin)) !== currentAirtimeBlock) {
+      finalPlaylistSlice.push(
+        await createCommercialSpin({
+          userId,
+          playlist: finalPlaylistSlice,
+          commercialChooser: commercialChooser,
+        })
+      );
+      playlistPositionTracker++;
+      currentAirtimeBlock = getAirtimeBlock(
+        spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
+      );
+    }
+  }
+
+  // delete old commercial spins
+  let promises = [];
+  commercials.forEach((commercialSpin) =>
+    promises.push(commercialSpin.destroy())
+  );
+  finalPlaylistSlice.forEach((spin) => promises.push(spin.save()));
+
+  await Promise.allSettled(promises);
+
+  // then return the updated playlist
+  return await db.models.User.getPlaylist({ userId, extended: true });
+}
+
 async function generatePlaylist({ userId }) {
   const playlistEndTime = moment().add(4, "hours");
 
@@ -181,14 +281,20 @@ function lastAirtime(playlist) {
 
 function playlistEndMoment(playlist) {
   let lastSpin = playlist[playlist.length - 1];
-  return moment(lastSpin.airtime).add(lastSpin.audioBlock.endOfMessageMS, "ms");
+  return spinEndMoment(spin);
+}
+
+function spinEndMoment(spin) {
+  return moment(spin.airtime).add(spin.audioBlock.endOfMessageMS, "ms");
 }
 
 module.exports = {
   generatePlaylist,
+  moveSpin,
 
   // expose for testing
   getAirtimeBlock,
   airtimeForSpin,
   msLeftInVoicetrack,
+  reformatSchedule,
 };

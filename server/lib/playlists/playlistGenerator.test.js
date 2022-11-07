@@ -118,6 +118,12 @@ describe("Playlist Scheduling", function () {
     });
   });
 
+  describe("TODO: Add tests for reformatSchedule, moveSpin", function () {
+    it.skip("Leaving this as a reminder to write these tests in the future", function () {
+      assert.isTrue(true);
+    });
+  });
+
   describe("airtimeForSpin", function () {
     var user, songs, spinData, currentPlaylist;
     var commercial1, commercial2, voicetrack1, voicetrack2;

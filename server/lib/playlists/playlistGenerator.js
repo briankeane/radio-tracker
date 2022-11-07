@@ -119,7 +119,7 @@ async function generatePlaylist({ userId }) {
   const songChooser = new SongChooser({ stationSongs });
   const commercialChooser = new CommercialChooser({ userId });
 
-  let playlist = await db.models.Spin.getPlaylist({ userId });
+  let playlist = await db.models.Spin.getFullPlaylist({ userId });
 
   // The generator needs at least 1 spin to get started.
   if (!playlist.length) {
@@ -281,7 +281,7 @@ function lastAirtime(playlist) {
 
 function playlistEndMoment(playlist) {
   let lastSpin = playlist[playlist.length - 1];
-  return spinEndMoment(spin);
+  return spinEndMoment(lastSpin);
 }
 
 function spinEndMoment(spin) {

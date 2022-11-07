@@ -57,10 +57,22 @@ StationSong.findAllActive = async ({ userId }) => {
 
 Spin.getPlaylist = async ({ userId, extended = false }) => {
   let untilTime = extended ? minutesFromNow(200) : minutesFromNow(15);
+  console.log("now: ", Date.now());
+  console.log("untilTime: ", untilTime);
   return await Spin.findAll({
     where: {
       userId,
       airtime: { [Sequelize.Op.between]: [minutesAgo(15), untilTime] },
+    },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: AudioBlock }],
+  });
+};
+
+Spin.getFullPlaylist = async ({ userId }) => {
+  return await Spin.findAll({
+    where: {
+      userId,
     },
     order: [["playlistPosition", "ASC"]],
     include: [{ model: AudioBlock }],

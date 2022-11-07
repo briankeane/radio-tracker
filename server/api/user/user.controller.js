@@ -14,6 +14,7 @@ function createUser(req, res) {
 
 function getUser(req, res) {
   const isMe = req.params?.userId === "me";
+  console.log("ISME: " + isMe);
   const userId = isMe ? req.user.id : req.params.userId;
 
   lib

@@ -57,5 +57,16 @@
     "sinon": "^14.0.1",
     "supertest": "^6.3.0",
     "timekeeper": "^2.2.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "browser": true,
+      "commonjs": true,
+      "es2021": true
+    },
+    "overrides": [],
+    "parserOptions": {
+      "ecmaVersion": "latest"
+    }
   }
 }

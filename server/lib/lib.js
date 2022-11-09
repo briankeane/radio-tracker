@@ -3,8 +3,10 @@ const eventStream = require("./events");
 const spotifyLib = require("./spotify/spotify.lib");
 const events = require("./events/events");
 const errors = require("./errors");
+const playlistGenerator = require("./playlists/playlistGenerator");
 const { Op, UniqueConstraintError } = require("sequelize");
 const audioProvider = require("./audioProvider");
+const { logPlaylist } = require("../test/test.helpers");
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
@@ -37,6 +39,13 @@ const getUser = async function ({ userId, extendedPlaylist = false }) {
   if (playlist.length) {
     user.setDataValue("playlist", playlist);
   }
+  return user;
+};
+
+const moveSpin = async function ({ userId, spinId, newPlaylistPosition }) {
+  await playlistGenerator.moveSpin({ spinId, newPlaylistPosition });
+  let user = await getUser({ userId, extendedPlaylist: true });
+  logPlaylist("new Playlist: ", user.toJSON()["playlist"]);
   return user;
 };
 
@@ -196,6 +205,7 @@ module.exports = {
   createUserViaSpotifyRefreshToken,
   getUsersStationSongs,
   getUser,
+  moveSpin,
   createSong,
   updateSong,
   initializeSongsForUser,

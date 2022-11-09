@@ -6,6 +6,7 @@
   "scripts": {
     "test": "env-cmd -f .env-test mocha \"./{,!(node_modules)/**}/*.test.js\" --recursive --exit",
     "test:watch": "env-cmd -f .env-test mocha \"./{,!(node_modules)/**}/*.test.js\" --watch --recursive --exit",
+    "test:debug": "env-cmd -f .env-test mocha \"./{,!(node_modules)/**}/*.test.js\" --recursive --exit --inspect=0.0.0.0",
     "migrate": "sequelize db:migrate",
     "migrate:test": "env-cmd -f .env-test sequelize db:migrate",
     "migrate:all": "npm run migrate && npm run migrate:test",

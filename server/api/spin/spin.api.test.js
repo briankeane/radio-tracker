@@ -6,7 +6,6 @@ const { clearDatabase } = require("../../test/test.helpers");
 const { createUser } = require("../../test/testDataGenerator");
 const jwt = require("jsonwebtoken");
 const { generateToken } = require("../../lib/jwt");
-const { createUser } = require("../user/user.controller");
 
 describe("Spin", function () {
   let user, token;
@@ -23,7 +22,5 @@ describe("Spin", function () {
     token = await generateToken(user);
   });
 
-  describe("MOVE", function () {
-    let;
-  });
+  describe("MOVE", function () {});
 });

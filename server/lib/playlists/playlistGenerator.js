@@ -1,7 +1,9 @@
 const db = require("../../db");
+const Sequelize = require("sequelize");
 const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
+const { logPlaylist } = require("../../test/test.helpers");
 
 const SONG_BINS = {
   heavy: 20,
@@ -27,14 +29,19 @@ async function moveSpin({ spinId, newPlaylistPosition }) {
   let effectedSpins = await db.models.Spin.findAll({
     where: {
       playlistPosition: {
-        [Op.between]: [minPlaylistPosition, maxPlaylistPosition],
+        [Sequelize.Op.between]: [
+          minPlaylistPosition - 1,
+          maxPlaylistPosition + 1,
+        ],
       },
-      order: [["playlistPosition", "ASC"]],
     },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: db.models.AudioBlock }],
   });
+
   // grab the min and max indexes
   var minIndex, maxIndex;
-  for (let [index, spin] of effectedSpin.entries) {
+  for (let [index, spin] of effectedSpins.entries()) {
     // minIndex
     if (!minIndex && spin.playlistPosition == minPlaylistPosition) {
       minIndex = index;
@@ -51,10 +58,10 @@ async function moveSpin({ spinId, newPlaylistPosition }) {
 
   // correct airtimes, playlistPositions, and commercials
   await this.reformatSchedule({
-    playlist: effectedSpins,
+    playlistSlice: effectedSpins,
   });
 
-  return await db.models.User.getPlaylist({
+  return await db.models.Spin.getPlaylist({
     userId: spinToMove.userId,
     extended: true,
   });
@@ -62,15 +69,16 @@ async function moveSpin({ spinId, newPlaylistPosition }) {
 
 async function reformatSchedule({ playlistSlice }) {
   const { userId } = playlistSlice[0];
-  const commercialChooser = new CommercialChooser({ userId });
 
   var currentAirtimeBlock = getAirtimeBlock(playlistSlice[0].airtime);
   let playlistPositionTracker = playlistSlice[0].playlistPosition + 1;
 
   let playlistWithoutCommercials = playlistSlice.filter(
-    (spin) => spin.type !== "commercial"
+    (spin) => spin.audioBlock.type !== "commercial"
   );
-  let commercials = playlistSlice.filter((spin) => spin.type === "commercial");
+  var commercials = playlistSlice.filter(
+    (spin) => spin.audioBlock.type === "commercial"
+  );
 
   var finalPlaylistSlice = [playlistWithoutCommercials[0]];
 
@@ -84,15 +92,21 @@ async function reformatSchedule({ playlistSlice }) {
     });
     finalPlaylistSlice.push(playlistWithoutCommercials[i]);
 
-    if (getAirtimeBlock(spinEndMoment(spin)) !== currentAirtimeBlock) {
-      finalPlaylistSlice.push(
-        await createCommercialSpin({
-          userId,
-          playlist: finalPlaylistSlice,
-          commercialChooser: commercialChooser,
-        })
-      );
+    if (
+      getAirtimeBlock(
+        spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
+      ) !== currentAirtimeBlock
+    ) {
+      let commercial = commercials.pop();
+      commercial.playlistPosition = playlistPositionTracker;
       playlistPositionTracker++;
+
+      commercial.airtime = airtimeForSpin({
+        currentPlaylist: finalPlaylistSlice,
+        spinData: commercial,
+      });
+      finalPlaylistSlice.push(commercial);
+
       currentAirtimeBlock = getAirtimeBlock(
         spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
       );
@@ -101,15 +115,12 @@ async function reformatSchedule({ playlistSlice }) {
 
   // delete old commercial spins
   let promises = [];
-  commercials.forEach((commercialSpin) =>
-    promises.push(commercialSpin.destroy())
-  );
-  finalPlaylistSlice.forEach((spin) => promises.push(spin.save()));
+  finalPlaylistSlice.forEach(async (spin) => promises.push(await spin.save()));
 
   await Promise.allSettled(promises);
 
   // then return the updated playlist
-  return await db.models.User.getPlaylist({ userId, extended: true });
+  return await db.models.Spin.getPlaylist({ userId, extended: true });
 }
 
 async function generatePlaylist({ userId }) {
@@ -266,8 +277,9 @@ function msLeftInVoicetrack({ voicetrackSpin, previousSpin }) {
 }
 
 function getAirtimeBlock(airtime) {
+  let regularDate = moment.isMoment(airtime) ? airtime.toDate() : airtime;
   return Math.floor(
-    airtime.toDate().getTime() / (1000.0 * 60 * AIRTIME_BLOCK_SIZE_MIN)
+    regularDate.getTime() / (1000.0 * 60 * AIRTIME_BLOCK_SIZE_MIN)
   );
 }
 

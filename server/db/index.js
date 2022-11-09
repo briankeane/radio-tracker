@@ -57,8 +57,6 @@ StationSong.findAllActive = async ({ userId }) => {
 
 Spin.getPlaylist = async ({ userId, extended = false }) => {
   let untilTime = extended ? minutesFromNow(200) : minutesFromNow(15);
-  console.log("now: ", Date.now());
-  console.log("untilTime: ", untilTime);
   return await Spin.findAll({
     where: {
       userId,

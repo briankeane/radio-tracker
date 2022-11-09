@@ -12,11 +12,17 @@ const {
   createVoicetrack,
   createSong,
 } = require("../../test/testDataGenerator");
-const { clearDatabase } = require("../../test/test.helpers");
+const {
+  clearDatabase,
+  logPlaylist,
+  assertCommercialsAreImmediatelyAfterTopAndBottomofHour,
+  assertHasConsecutivePlaylistPositions,
+} = require("../../test/test.helpers");
 const generator = require("./playlistGenerator");
 const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
+const spotifyLib = require("../spotify/spotify.lib");
 
 var timeFormat = "h:mm:ssa YYYY-MM-D";
 moment.defaultFormat = timeFormat;
@@ -25,15 +31,27 @@ moment.createFromInputFallback = function (config) {
 };
 
 describe("Playlist Scheduling", function () {
-  var user, song, commercial, playlist;
+  var user, song, songs, commercial, playlist;
+
+  function pickRandomSong() {
+    return songs[Math.floor(Math.random() * songs.length)];
+  }
 
   before(async function () {
     await clearDatabase(db);
     user = await createUser(db);
-    await createStationSongsWithSongs(db, {
-      userId: user.id,
-      count: 100,
-    });
+    songs = (
+      await createStationSongsWithSongs(db, {
+        userId: user.id,
+        count: 100,
+        songData: {
+          durationMS: 182000,
+          endOfIntroMS: 5000,
+          beginningOfOutroMS: 170000,
+          endOfMessageMS: 180000,
+        },
+      })
+    ).songs;
     tk.freeze(new Date(2015, 3, 15, 13, 1));
     song = await createSong(db, {
       durationMS: 182000,
@@ -46,7 +64,8 @@ describe("Playlist Scheduling", function () {
       endOfMessageMS: 120000,
     });
 
-    sinon.stub(SongChooser.prototype, "chooseSong").resolves(song);
+    // choose random song each time -- they are the same length, though
+    sinon.stub(SongChooser.prototype, "chooseSong").callsFake(pickRandomSong);
     sinon
       .stub(CommercialChooser.prototype, "chooseCommercial")
       .resolves(commercial);
@@ -119,9 +138,47 @@ describe("Playlist Scheduling", function () {
   });
 
   describe("TODO: Add tests for reformatSchedule, moveSpin", function () {
-    it.skip("Leaving this as a reminder to write these tests in the future", function () {
-      assert.isTrue(true);
+    it("move spin backwards", async function () {
+      let longSong = await createSong(db, {
+        durationMS: 210200,
+        endOfIntroMS: 5000,
+        beginningOfOutroMS: 170000,
+        endOfMessageMS: 210000,
+      });
+
+      let spinToMove = playlist[26]; // playlistPosition 27
+      playlist[26].audioBlockId = longSong.id;
+      await playlist[26].save();
+
+      await generator.moveSpin({
+        spinId: spinToMove.id,
+        newPlaylistPosition: 6,
+      });
+      let newPlaylist = await db.models.Spin.getFullPlaylist({
+        userId: user.id,
+      });
+
+      // playlistPositions are consecutive
+      for (let i = 1; i < newPlaylist.length; i++) {
+        assert.equal(
+          newPlaylist[i].playlistPosition,
+          newPlaylist[i - 1].playlistPosition + 1
+        );
+      }
+
+      // commercials in the right place
+      assertCommercialsAreImmediatelyAfterTopAndBottomofHour(playlist);
+      assertHasConsecutivePlaylistPositions(playlist);
+
+      // long spin moved back
+      assert.equal(playlist[26].id, newPlaylist[5].id);
     });
+
+    it("move spin backwards simple", function () {});
+
+    it("moves a spin forwards past a commercial block", function () {});
+
+    it("moves a spin backwards over a commercial block", function () {});
   });
 
   describe("airtimeForSpin", function () {

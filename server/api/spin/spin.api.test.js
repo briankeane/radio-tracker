@@ -22,5 +22,7 @@ describe("Spin", function () {
     token = await generateToken(user);
   });
 
-  describe("MOVE", function () {});
+  describe("MOVE -- TODO: ADD THESE", function () {});
+
+  describe("DELETE -- TODO: ADD THESE", function () {});
 });

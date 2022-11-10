@@ -42,11 +42,14 @@ const getUser = async function ({ userId, extendedPlaylist = false }) {
   return user;
 };
 
+const deleteSpin = async function ({ spinId, userId }) {
+  await playlistGenerator.deleteSpin({ spinId });
+  return await getUser({ userId, extendedPlaylist: true });
+};
+
 const moveSpin = async function ({ userId, spinId, newPlaylistPosition }) {
   await playlistGenerator.moveSpin({ spinId, newPlaylistPosition });
-  let user = await getUser({ userId, extendedPlaylist: true });
-  logPlaylist("new Playlist: ", user.toJSON()["playlist"]);
-  return user;
+  return await getUser({ userId, extendedPlaylist: true });
 };
 
 const getUsersStationSongs = async function ({ userId }) {
@@ -206,6 +209,7 @@ module.exports = {
   getUsersStationSongs,
   getUser,
   moveSpin,
+  deleteSpin,
   createSong,
   updateSong,
   initializeSongsForUser,

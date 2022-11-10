@@ -6,5 +6,6 @@ const router = express.Router();
 
 // router.post("/", controller.createUser);
 router.put("/:spinId", authenticate, controller.moveSpin);
+router.delete("/:spinId", authenticate, controller.deleteSpin);
 
 module.exports = router;

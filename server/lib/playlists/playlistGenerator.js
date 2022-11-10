@@ -14,6 +14,29 @@ const AIRTIME_BLOCK_SIZE_MIN = 30;
 const lengthOfOutroMS = (audioBlock) =>
   audioBlock.endOfMessageMS - audioBlock.beginningOfOutroMS;
 
+async function deleteSpin({ spinId }) {
+  let spinToDelete = await db.models.Spin.findByPk(spinId);
+  let { userId } = spinToDelete;
+  let effectedSpins = await db.models.Spin.findAll({
+    where: {
+      playlistPosition: {
+        [Sequelize.Op.gte]: spinToDelete.playlistPosition - 1,
+      },
+    },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: db.models.AudioBlock }],
+  });
+  effectedSpins.splice(1, 1); // remove the deleted spin, which will be at index 1
+
+  await reformatSchedule({ playlistSlice: effectedSpins });
+  await spinToDelete.destroy();
+
+  return await db.models.Spin.getPlaylist({
+    userId: userId,
+    extended: true,
+  });
+}
+
 async function moveSpin({ spinId, newPlaylistPosition }) {
   let spinToMove = await db.models.Spin.findByPk(spinId, {
     include: [
@@ -303,6 +326,7 @@ function spinEndMoment(spin) {
 module.exports = {
   generatePlaylist,
   moveSpin,
+  deleteSpin,
 
   // expose for testing
   getAirtimeBlock,

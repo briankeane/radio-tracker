@@ -1,7 +1,9 @@
 const db = require("../../db");
+const Sequelize = require("sequelize");
 const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
+const { logPlaylist } = require("../../test/test.helpers");
 
 const SONG_BINS = {
   heavy: 20,
@@ -12,6 +14,135 @@ const AIRTIME_BLOCK_SIZE_MIN = 30;
 const lengthOfOutroMS = (audioBlock) =>
   audioBlock.endOfMessageMS - audioBlock.beginningOfOutroMS;
 
+async function deleteSpin({ spinId }) {
+  let spinToDelete = await db.models.Spin.findByPk(spinId);
+  let { userId } = spinToDelete;
+  let effectedSpins = await db.models.Spin.findAll({
+    where: {
+      playlistPosition: {
+        [Sequelize.Op.gte]: spinToDelete.playlistPosition - 1,
+      },
+    },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: db.models.AudioBlock }],
+  });
+  effectedSpins.splice(1, 1); // remove the deleted spin, which will be at index 1
+
+  await reformatSchedule({ playlistSlice: effectedSpins });
+  await spinToDelete.destroy();
+
+  return await db.models.Spin.getPlaylist({
+    userId: userId,
+    extended: true,
+  });
+}
+
+async function moveSpin({ spinId, newPlaylistPosition }) {
+  let spinToMove = await db.models.Spin.findByPk(spinId, {
+    include: [
+      {
+        model: db.models.AudioBlock,
+      },
+    ],
+  });
+  let oldPlaylistPosition = spinToMove.playlistPosition;
+  let maxPlaylistPosition = Math.max(oldPlaylistPosition, newPlaylistPosition);
+  let minPlaylistPosition = Math.min(oldPlaylistPosition, newPlaylistPosition);
+  let movingEarlier = maxPlaylistPosition === oldPlaylistPosition;
+  let effectedSpins = await db.models.Spin.findAll({
+    where: {
+      playlistPosition: {
+        [Sequelize.Op.gte]: minPlaylistPosition - 1,
+      },
+    },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: db.models.AudioBlock }],
+  });
+
+  // grab the min and max indexes
+  var minIndex, maxIndex;
+  for (let [index, spin] of effectedSpins.entries()) {
+    // minIndex
+    if (!minIndex && spin.playlistPosition == minPlaylistPosition) {
+      minIndex = index;
+    } else if (spin.playlistPosition === maxPlaylistPosition) {
+      maxIndex = index;
+    }
+  }
+  // rearrange the array
+  if (movingEarlier) {
+    effectedSpins.splice(minIndex, 0, effectedSpins.splice(maxIndex, 1)[0]);
+  } else {
+    effectedSpins.splice(maxIndex, 0, effectedSpins.splice(minIndex, 1)[0]);
+  }
+
+  // correct airtimes, playlistPositions, and commercials
+  await this.reformatSchedule({
+    playlistSlice: effectedSpins,
+  });
+
+  return await db.models.Spin.getPlaylist({
+    userId: spinToMove.userId,
+    extended: true,
+  });
+}
+
+async function reformatSchedule({ playlistSlice }) {
+  const { userId } = playlistSlice[0];
+
+  var currentAirtimeBlock = getAirtimeBlock(playlistSlice[0].airtime);
+  let playlistPositionTracker = playlistSlice[0].playlistPosition + 1;
+
+  let playlistWithoutCommercials = playlistSlice.filter(
+    (spin) => spin.audioBlock.type !== "commercial"
+  );
+  var commercials = playlistSlice.filter(
+    (spin) => spin.audioBlock.type === "commercial"
+  );
+
+  var finalPlaylistSlice = [playlistWithoutCommercials[0]];
+
+  for (let i = 1; i < playlistWithoutCommercials.length; i++) {
+    playlistWithoutCommercials[i].playlistPosition = playlistPositionTracker;
+    playlistPositionTracker++;
+
+    playlistWithoutCommercials[i].airtime = airtimeForSpin({
+      currentPlaylist: finalPlaylistSlice,
+      spinData: playlistWithoutCommercials[i],
+    });
+    finalPlaylistSlice.push(playlistWithoutCommercials[i]);
+
+    if (
+      getAirtimeBlock(
+        spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
+      ) !== currentAirtimeBlock
+    ) {
+      let commercial = commercials.pop();
+      commercial.playlistPosition = playlistPositionTracker;
+      playlistPositionTracker++;
+
+      commercial.airtime = airtimeForSpin({
+        currentPlaylist: finalPlaylistSlice,
+        spinData: commercial,
+      });
+      finalPlaylistSlice.push(commercial);
+
+      currentAirtimeBlock = getAirtimeBlock(
+        spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
+      );
+    }
+  }
+
+  // delete old commercial spins
+  let promises = [];
+  finalPlaylistSlice.forEach(async (spin) => promises.push(await spin.save()));
+
+  await Promise.allSettled(promises);
+
+  // then return the updated playlist
+  return await db.models.Spin.getPlaylist({ userId, extended: true });
+}
+
 async function generatePlaylist({ userId }) {
   const playlistEndTime = moment().add(4, "hours");
 
@@ -19,7 +150,7 @@ async function generatePlaylist({ userId }) {
   const songChooser = new SongChooser({ stationSongs });
   const commercialChooser = new CommercialChooser({ userId });
 
-  let playlist = await db.models.Spin.getPlaylist({ userId });
+  let playlist = await db.models.Spin.getFullPlaylist({ userId });
 
   // The generator needs at least 1 spin to get started.
   if (!playlist.length) {
@@ -166,8 +297,9 @@ function msLeftInVoicetrack({ voicetrackSpin, previousSpin }) {
 }
 
 function getAirtimeBlock(airtime) {
+  let regularDate = moment.isMoment(airtime) ? airtime.toDate() : airtime;
   return Math.floor(
-    airtime.toDate().getTime() / (1000.0 * 60 * AIRTIME_BLOCK_SIZE_MIN)
+    regularDate.getTime() / (1000.0 * 60 * AIRTIME_BLOCK_SIZE_MIN)
   );
 }
 
@@ -181,14 +313,21 @@ function lastAirtime(playlist) {
 
 function playlistEndMoment(playlist) {
   let lastSpin = playlist[playlist.length - 1];
-  return moment(lastSpin.airtime).add(lastSpin.audioBlock.endOfMessageMS, "ms");
+  return spinEndMoment(lastSpin);
+}
+
+function spinEndMoment(spin) {
+  return moment(spin.airtime).add(spin.audioBlock.endOfMessageMS, "ms");
 }
 
 module.exports = {
   generatePlaylist,
+  moveSpin,
+  deleteSpin,
 
   // expose for testing
   getAirtimeBlock,
   airtimeForSpin,
   msLeftInVoicetrack,
+  reformatSchedule,
 };

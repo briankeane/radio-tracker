@@ -3,8 +3,10 @@ const eventStream = require("./events");
 const spotifyLib = require("./spotify/spotify.lib");
 const events = require("./events/events");
 const errors = require("./errors");
+const playlistGenerator = require("./playlists/playlistGenerator");
 const { Op, UniqueConstraintError } = require("sequelize");
 const audioProvider = require("./audioProvider");
+const { logPlaylist } = require("../test/test.helpers");
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
@@ -27,14 +29,27 @@ const createUserViaSpotifyRefreshToken = async function ({ refreshToken }) {
   return finish(user, created);
 };
 
-const getUser = async function ({ userId }) {
+const getUser = async function ({ userId, extendedPlaylist = false }) {
   let user = await db.models.User.findByPk(userId);
   if (!user) throw new Error(errors.USER_NOT_FOUND);
-  let playlist = await db.models.Spin.getPlaylist({ userId });
+  let playlist = await db.models.Spin.getPlaylist({
+    userId,
+    extended: extendedPlaylist,
+  });
   if (playlist.length) {
-    user.playlist = playlist;
+    user.setDataValue("playlist", playlist);
   }
   return user;
+};
+
+const deleteSpin = async function ({ spinId, userId }) {
+  await playlistGenerator.deleteSpin({ spinId });
+  return await getUser({ userId, extendedPlaylist: true });
+};
+
+const moveSpin = async function ({ userId, spinId, newPlaylistPosition }) {
+  await playlistGenerator.moveSpin({ spinId, newPlaylistPosition });
+  return await getUser({ userId, extendedPlaylist: true });
 };
 
 const getUsersStationSongs = async function ({ userId }) {
@@ -193,6 +208,8 @@ module.exports = {
   createUserViaSpotifyRefreshToken,
   getUsersStationSongs,
   getUser,
+  moveSpin,
+  deleteSpin,
   createSong,
   updateSong,
   initializeSongsForUser,

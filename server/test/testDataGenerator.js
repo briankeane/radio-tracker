@@ -106,11 +106,14 @@ const createStationSong = async function (db, data = {}) {
   return stationSong;
 };
 
-const createStationSongsWithSongs = async function (db, { count, userId }) {
+const createStationSongsWithSongs = async function (
+  db,
+  { count, userId, songData = {} }
+) {
   const songs = [];
   const stationSongs = [];
   for (let i = 0; i < count; i++) {
-    songs.push(await createSong(db));
+    songs.push(await createSong(db, songData));
     stationSongs.push(
       await createStationSong(db, { userId, songId: songs[i].id })
     );

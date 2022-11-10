@@ -1,5 +1,17 @@
 const { assert } = require("chai");
 const logger = require("../logger");
+const moment = require("moment");
+
+/*
+ * Duplicates from playlistGenerator.js for tests
+ */
+const AIRTIME_BLOCK_SIZE_MIN = 30;
+function getAirtimeBlock(airtime) {
+  let regularDate = moment.isMoment(airtime) ? airtime.toDate() : airtime;
+  return Math.floor(
+    regularDate.getTime() / (1000.0 * 60 * AIRTIME_BLOCK_SIZE_MIN)
+  );
+}
 
 async function clearDatabase(db) {
   if (process.env.NODE_ENV !== "test") return; // for safety
@@ -56,6 +68,50 @@ async function assertInstancePropertyEventuallyEquals(
   }
 }
 
+function assertHasConsecutivePlaylistPositions(playlist) {
+  for (let i = 0; i < playlist.length; i++) {
+    if (i > 0) {
+      assert.isTrue(
+        playlist[i].playlistPosition === playlist[i - 1].playlistPosition + 1,
+        `playlistPositions are not consecutive for playlistPositions: ${
+          playlist[i - 1].playlistPosition
+        }, ${playlist[i].playlistPosition}`
+      );
+    }
+  }
+}
+
+function assertCommercialsAreImmediatelyAfterTopAndBottomofHour(playlist) {
+  console.log("getAirtimeBlock: ", getAirtimeBlock);
+  let currentAirtimeBlock = getAirtimeBlock(playlist[0].airtime);
+  for (let i = 1; i < playlist.length; i++) {
+    let spin = playlist[i];
+    if (getAirtimeBlock(spin.airtime) !== currentAirtimeBlock) {
+      assert.equal(
+        spin.audioBlock.type,
+        "commercial",
+        "expected commercial not present"
+      );
+      currentAirtimeBlock = getAirtimeBlock(spin.airtime);
+    } else {
+      assert.notEqual(
+        spin.audioBlock.type,
+        "commercial",
+        "commercial found in the wrong place"
+      );
+    }
+  }
+}
+
+function logPlaylist(msg, playlist) {
+  console.log(`---------------------- ${msg} ---------------------------`);
+  playlist.forEach((spin, index) => {
+    console.log(
+      `${index}: ${spin.playlistPosition} -- ${spin.audioBlock.title} ${spin.airtime}`
+    );
+  });
+}
+
 function checkAndClearNocks(nock) {
   if (!nock.isDone()) {
     logger.always.log("remaining Nocks: ", nock.pendingMocks());
@@ -67,6 +123,9 @@ function checkAndClearNocks(nock) {
 module.exports = {
   clearDatabase,
   assertInstancePropertyEventuallyEquals,
+  assertHasConsecutivePlaylistPositions,
+  assertCommercialsAreImmediatelyAfterTopAndBottomofHour,
   waitForInstanceToExist,
   checkAndClearNocks,
+  logPlaylist,
 };

@@ -52,10 +52,7 @@ async function moveSpin({ spinId, newPlaylistPosition }) {
   let effectedSpins = await db.models.Spin.findAll({
     where: {
       playlistPosition: {
-        [Sequelize.Op.between]: [
-          minPlaylistPosition - 1,
-          maxPlaylistPosition + 1,
-        ],
+        [Sequelize.Op.gte]: spinToDelete.playlistPosition - 1,
       },
     },
     order: [["playlistPosition", "ASC"]],

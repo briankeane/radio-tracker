@@ -16,6 +16,7 @@ const s3 = new AWS.S3({ signatureVersion: "v4" });
 const moment = require("moment");
 
 const crypto = require("crypto");
+const { max } = require("../db/models/audioBlock.model");
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
@@ -53,6 +54,15 @@ const getUser = async function ({ userId, extendedPlaylist = false }) {
 
 const deleteSpin = async function ({ spinId, userId }) {
   await playlistGenerator.deleteSpin({ spinId });
+  return await getUser({ userId, extendedPlaylist: true });
+};
+
+const insertSpin = async function ({ userId, audioBlockId, playlistPosition }) {
+  await playlistGenerator.insertSpin({
+    userId,
+    audioBlockId,
+    playlistPosition,
+  });
   return await getUser({ userId, extendedPlaylist: true });
 };
 
@@ -196,6 +206,7 @@ function createPresignedUploadUrl({ userId }) {
 async function createVoiceTrack({ filename, durationMS }) {
   return await db.models.VoiceTrack.create({
     durationMS,
+    endOfMessageMS: Math.min(durationMS - 1000, durationMS),
     audioUrl: `//${process.env.VOICETRACKS_BUCKET}.s3.amazonaws.com/${filename}`,
   });
 }
@@ -238,6 +249,7 @@ module.exports = {
   getUser,
   moveSpin,
   deleteSpin,
+  insertSpin,
   createSong,
   updateSong,
   initializeSongsForUser,

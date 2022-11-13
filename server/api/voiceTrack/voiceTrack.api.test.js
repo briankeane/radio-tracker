@@ -7,7 +7,7 @@ const { createUser } = require("../../test/testDataGenerator");
 const jwt = require("jsonwebtoken");
 const { generateToken } = require("../../lib/jwt");
 
-describe("Spin", function () {
+describe("VoiceTrack", function () {
   let user, token;
   this.afterEach(async function () {
     await clearDatabase(db);
@@ -22,9 +22,5 @@ describe("Spin", function () {
     token = await generateToken(user);
   });
 
-  describe("MOVE -- TODO: ADD THESE", function () {});
-
-  describe("DELETE -- TODO: ADD THESE", function () {});
-
-  describe("Create Upload Url -- TODO: ADD THESE", function () {});
+  describe("CREATE -- TODO: ADD THESE", function () {});
 });

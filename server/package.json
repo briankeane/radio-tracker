@@ -32,6 +32,7 @@
   "homepage": "https://github.com/briankeane/playola#readme",
   "dependencies": {
     "amqplib": "^0.10.3",
+    "aws-sdk": "^2.1253.0",
     "axios": "^0.22.0",
     "body-parser": "^1.20.1",
     "compression": "^1.7.4",

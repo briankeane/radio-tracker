@@ -226,7 +226,7 @@ function airtimeForVoicetrackSpin({ currentPlaylist, spinData }) {
     );
   }
 
-  // Voicetrack is shorter than the intro.  Cover half of the voicetrack
+  // VoiceTrack is shorter than the intro.  Cover half of the voicetrack
   return moment(previousSpin.airtime).add(
     spinData.audioBlock.durationMS / 2,
     "milliseconds"

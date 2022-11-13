@@ -5,7 +5,6 @@ const { authenticate } = require("../security");
 const router = express.Router();
 
 router.post("/", authenticate, controller.insertSpin);
-router.post("/uploadUrl", authenticate, controller.createUploadUrl);
 router.put("/:spinId", authenticate, controller.moveSpin);
 router.delete("/:spinId", authenticate, controller.deleteSpin);
 

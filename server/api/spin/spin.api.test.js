@@ -25,6 +25,4 @@ describe("Spin", function () {
   describe("MOVE -- TODO: ADD THESE", function () {});
 
   describe("DELETE -- TODO: ADD THESE", function () {});
-
-  describe("Create Upload Url -- TODO: ADD THESE", function () {});
 });

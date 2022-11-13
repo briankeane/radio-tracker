@@ -12,6 +12,15 @@ function createVoiceTrack(req, res) {
     .catch((err) => APIError.APIResponseFromPlayolaError(err, res));
 }
 
+function createUploadUrl(req, res) {
+  const { presignedUrl, filename } = lib.createPresignedUploadUrl({
+    userId: req.user.id,
+  });
+  console.log("uploadUrl: ", presignedUrl);
+  return res.status(200).json({ presignedUrl, filename });
+}
+
 module.exports = {
   createVoiceTrack,
+  createUploadUrl,
 };

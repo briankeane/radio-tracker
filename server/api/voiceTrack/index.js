@@ -4,7 +4,7 @@ const { authenticate } = require("../security");
 
 const router = express.Router();
 
-// router.post("/", controller.createUser);
+router.post("/uploadUrl", authenticate, controller.createUploadUrl);
 router.post("/", authenticate, controller.createVoiceTrack);
 
 module.exports = router;

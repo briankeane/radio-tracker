@@ -37,6 +37,43 @@ async function deleteSpin({ spinId }) {
   });
 }
 
+async function insertSpin({ audioBlockId, playlistPosition, userId }) {
+  let effectedSpins = await db.models.Spin.findAll({
+    where: {
+      playlistPosition: {
+        [Sequelize.Op.gte]: playlistPosition - 2,
+      },
+    },
+    order: [["playlistPosition", "ASC"]],
+    include: [{ model: db.models.AudioBlock }],
+  });
+  let createdSpin = await db.models.Spin.create({
+    audioBlockId,
+    userId,
+    playlistPosition,
+    airtime: new Date(), // placeholder... cannot be null
+  });
+  let newSpin = await db.models.Spin.findByPk(createdSpin.id, {
+    include: [{ model: db.models.AudioBlock }],
+  });
+
+  let index = effectedSpins.findIndex((spin) => {
+    console.log("spin.playlistPosition: ", spin.playlistPosition);
+    console.log("playlistPosition: ", playlistPosition);
+    console.log("==: ", spin.playlistPosition == playlistPosition);
+    return spin.playlistPosition == playlistPosition;
+  });
+
+  effectedSpins.splice(index, 0, newSpin);
+  await this.reformatSchedule({
+    playlistSlice: effectedSpins,
+  });
+  return await db.models.Spin.getPlaylist({
+    userId: userId,
+    extended: true,
+  });
+}
+
 async function moveSpin({ spinId, newPlaylistPosition }) {
   let spinToMove = await db.models.Spin.findByPk(spinId, {
     include: [
@@ -226,7 +263,7 @@ function airtimeForVoicetrackSpin({ currentPlaylist, spinData }) {
     );
   }
 
-  // Voicetrack is shorter than the intro.  Cover half of the voicetrack
+  // VoiceTrack is shorter than the intro.  Cover half of the voicetrack
   return moment(previousSpin.airtime).add(
     spinData.audioBlock.durationMS / 2,
     "milliseconds"
@@ -324,6 +361,7 @@ module.exports = {
   generatePlaylist,
   moveSpin,
   deleteSpin,
+  insertSpin,
 
   // expose for testing
   getAirtimeBlock,

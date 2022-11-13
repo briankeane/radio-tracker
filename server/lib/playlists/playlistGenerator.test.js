@@ -300,7 +300,7 @@ describe("Playlist Scheduling", function () {
       });
     });
 
-    describe("Song | Voicetrack", function () {
+    describe("Song | VoiceTrack", function () {
       it("voicetrack is longer than outro -- schedule at beginning of outro", function () {
         let previousSpin = currentPlaylist[currentPlaylist.length - 1];
         previousSpin.audioBlock.durationMS = 180000;
@@ -336,7 +336,7 @@ describe("Playlist Scheduling", function () {
       });
     });
 
-    describe("Song | Voicetrack | Song", function () {
+    describe("Song | VoiceTrack | Song", function () {
       var songBeforeVoicetrackSpin, voicetrackSpin, spinData;
 
       beforeEach(function () {

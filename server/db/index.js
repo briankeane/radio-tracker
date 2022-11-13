@@ -34,10 +34,10 @@ Commercial.create = (attrs) =>
     ...{ type: "commercial" },
   });
 
-const Voicetrack = AudioBlock.scope("voicetracks");
-Voicetrack.create = (attrs) =>
+const VoiceTrack = AudioBlock.scope("voicetracks");
+VoiceTrack.create = (attrs) =>
   AudioBlock.create({
-    ...{ title: "Voicetrack", artist: "------" }, // defaults
+    ...{ title: "VoiceTrack", artist: "------" }, // defaults
     ...attrs,
     ...{ type: "voicetrack" },
   });
@@ -105,7 +105,7 @@ const models = {
   AudioBlock,
   Song,
   Commercial,
-  Voicetrack,
+  VoiceTrack,
   StationSong,
   Spin,
 };

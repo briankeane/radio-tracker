@@ -7,6 +7,16 @@ const playlistGenerator = require("./playlists/playlistGenerator");
 const { Op, UniqueConstraintError } = require("sequelize");
 const audioProvider = require("./audioProvider");
 const { logPlaylist } = require("../test/test.helpers");
+const AWS = require("aws-sdk");
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
+const s3 = new AWS.S3({ signatureVersion: "v4" });
+const moment = require("moment");
+
+const crypto = require("crypto");
+const { max } = require("../db/models/audioBlock.model");
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
@@ -44,6 +54,15 @@ const getUser = async function ({ userId, extendedPlaylist = false }) {
 
 const deleteSpin = async function ({ spinId, userId }) {
   await playlistGenerator.deleteSpin({ spinId });
+  return await getUser({ userId, extendedPlaylist: true });
+};
+
+const insertSpin = async function ({ userId, audioBlockId, playlistPosition }) {
+  await playlistGenerator.insertSpin({
+    userId,
+    audioBlockId,
+    playlistPosition,
+  });
   return await getUser({ userId, extendedPlaylist: true });
 };
 
@@ -172,6 +191,26 @@ async function initializeSongsForUser({ user }) {
   return { stationSongs: retrievedStationSongs, user };
 }
 
+function createPresignedUploadUrl({ userId }) {
+  const dateStr = moment().format("DD-MM-YYYY-h-mm-ss");
+  const filename = `${userId}--${dateStr}.m4a`;
+
+  const presignedUrl = s3.getSignedUrl("putObject", {
+    Bucket: process.env.VOICETRACKS_BUCKET,
+    Key: filename,
+    Expires: 60 * 5,
+  });
+  return { presignedUrl, filename };
+}
+
+async function createVoiceTrack({ filename, durationMS }) {
+  return await db.models.VoiceTrack.create({
+    durationMS,
+    endOfMessageMS: Math.min(durationMS - 1000, durationMS),
+    audioUrl: `//${process.env.VOICETRACKS_BUCKET}.s3.amazonaws.com/${filename}`,
+  });
+}
+
 /*
  * Helper methods
  */
@@ -210,8 +249,11 @@ module.exports = {
   getUser,
   moveSpin,
   deleteSpin,
+  insertSpin,
   createSong,
   updateSong,
   initializeSongsForUser,
   createSongViaSpotifyId,
+  createPresignedUploadUrl,
+  createVoiceTrack,
 };

@@ -88,7 +88,7 @@ const createCommercial = async function (db, data = {}) {
 };
 
 const createVoicetrack = async function (db, data = {}) {
-  return await db.models.Voicetrack.create({
+  return await db.models.VoiceTrack.create({
     durationMS: data.durationMS || 40000,
     audioUrl: data.audioUrl || faker.internet.url(),
     imageUrl: data.imageUrl || randomImageURL(),

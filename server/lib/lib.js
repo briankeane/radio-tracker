@@ -6,7 +6,6 @@ const errors = require("./errors");
 const playlistGenerator = require("./playlists/playlistGenerator");
 const { Op, UniqueConstraintError } = require("sequelize");
 const audioProvider = require("./audioProvider");
-const { logPlaylist } = require("../test/test.helpers");
 const AWS = require("aws-sdk");
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,

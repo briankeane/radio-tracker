@@ -3,7 +3,6 @@ const Sequelize = require("sequelize");
 const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
-const { logPlaylist } = require("../../test/test.helpers");
 
 const SONG_BINS = {
   heavy: 20,

@@ -133,7 +133,7 @@ function createSong(attrs) {
       .then(async ([song, created]) => {
         if (created) {
           let songData = await audioProvider.getDataForSong(song);
-          attrs.audioUrl = songData.audioUrl;
+          attrs = { ...songData, ...attrs };
         }
         return [await song.update(attrs), created];
       })

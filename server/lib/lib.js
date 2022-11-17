@@ -206,7 +206,7 @@ async function createVoiceTrack({ filename, durationMS }) {
   return await db.models.VoiceTrack.create({
     durationMS,
     endOfMessageMS: Math.min(durationMS - 1000, durationMS),
-    audioUrl: `//${process.env.VOICETRACKS_BUCKET}.s3.amazonaws.com/${filename}`,
+    audioUrl: `https://${process.env.VOICETRACKS_BUCKET}.s3.amazonaws.com/${filename}`,
   });
 }
 

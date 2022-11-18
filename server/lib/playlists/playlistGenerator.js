@@ -4,10 +4,6 @@ const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
 
-const SONG_BINS = {
-  heavy: 20,
-  medium: 30,
-};
 const AIRTIME_BLOCK_SIZE_MIN = 30;
 
 const lengthOfOutroMS = (audioBlock) =>
@@ -57,9 +53,6 @@ async function insertSpin({ audioBlockId, playlistPosition, userId }) {
   });
 
   let index = effectedSpins.findIndex((spin) => {
-    console.log("spin.playlistPosition: ", spin.playlistPosition);
-    console.log("playlistPosition: ", playlistPosition);
-    console.log("==: ", spin.playlistPosition == playlistPosition);
     return spin.playlistPosition == playlistPosition;
   });
 
@@ -153,7 +146,8 @@ async function reformatSchedule({ playlistSlice }) {
         spinEndMoment(finalPlaylistSlice[finalPlaylistSlice.length - 1])
       ) !== currentAirtimeBlock
     ) {
-      let commercial = commercials.pop();
+      var commercial =
+        commercials.pop() || (await new CommercialChooser.chooseCommercial());
       commercial.playlistPosition = playlistPositionTracker;
       playlistPositionTracker++;
 
@@ -171,12 +165,17 @@ async function reformatSchedule({ playlistSlice }) {
 
   // delete old commercial spins
   let promises = [];
-  finalPlaylistSlice.forEach(async (spin) => promises.push(await spin.save()));
 
-  await Promise.allSettled(promises);
+  for (let spin of finalPlaylistSlice) {
+    promises.push(spin.save());
+  }
+  let results = await Promise.allSettled(promises);
 
   // then return the updated playlist
-  return await db.models.Spin.getPlaylist({ userId, extended: true });
+  return await db.models.Spin.getPlaylist({
+    userId,
+    extended: true,
+  });
 }
 
 async function generatePlaylist({ userId }) {
@@ -254,7 +253,8 @@ function airtimeForVoicetrackSpin({ currentPlaylist, spinData }) {
   // If the voicetrack is long enough to cover the whole outro, start it at the previous spin's
   // begininningOfOutro
   if (
-    lengthOfOutroMS(previousSpin.audioBlock) <= spinData.audioBlock.durationMS
+    lengthOfOutroMS(previousSpin.audioBlock) <=
+    spinData.audioBlock.endOfMessageMS
   ) {
     return moment(previousSpin.airtime).add(
       previousSpin.audioBlock.beginningOfOutroMS,
@@ -262,11 +262,10 @@ function airtimeForVoicetrackSpin({ currentPlaylist, spinData }) {
     );
   }
 
-  // VoiceTrack is shorter than the intro.  Cover half of the voicetrack
-  return moment(previousSpin.airtime).add(
-    spinData.audioBlock.durationMS / 2,
-    "milliseconds"
-  );
+  // VoiceTrack is shorter than the outro.  Cover half of the voicetrack
+  return moment(previousSpin.airtime)
+    .add(previousSpin.audioBlock.endOfMessageMS, "milliseconds")
+    .subtract(spinData.audioBlock.endOfMessageMS / 2, "milliseconds");
 }
 
 function airtimeForSongFollowingVoicetrack({ currentPlaylist, spinData }) {

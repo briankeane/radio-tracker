@@ -82,7 +82,6 @@ function assertHasConsecutivePlaylistPositions(playlist) {
 }
 
 function assertCommercialsAreImmediatelyAfterTopAndBottomofHour(playlist) {
-  console.log("getAirtimeBlock: ", getAirtimeBlock);
   let currentAirtimeBlock = getAirtimeBlock(playlist[0].airtime);
   for (let i = 1; i < playlist.length; i++) {
     let spin = playlist[i];
@@ -103,13 +102,19 @@ function assertCommercialsAreImmediatelyAfterTopAndBottomofHour(playlist) {
   }
 }
 
-function logPlaylist(msg, playlist) {
+function logPlaylist(playlist, msg = "playlist log:") {
   console.log(`---------------------- ${msg} ---------------------------`);
-  playlist.forEach((spin, index) => {
-    console.log(
-      `${index}: ${spin.playlistPosition} -- ${spin.audioBlock.title} ${spin.airtime}`
-    );
-  });
+  console.table(
+    playlist.map((spin) => ({
+      playlistPosition: spin.playlistPosition,
+      title: spin.audioBlock.title,
+      airtime: moment(spin.airtime).format("h:mm:ss"),
+      audioUrl: spin.audioBlock.audioUrl,
+      endOfMessageMS: spin.audioBlock.endOfMessageMS,
+      beginningOfOutroMS: spin.audioBlock.beginningOfOutroMS,
+      endOfIntroMS: spin.audioBlock.endOfIntroMS,
+    }))
+  );
 }
 
 function checkAndClearNocks(nock) {

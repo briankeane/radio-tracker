@@ -49,7 +49,6 @@ StationSong.findAllActive = async ({ userId }) => {
       {
         model: Song,
         as: "song",
-        where: { audioUrl: { [Sequelize.Op.ne]: null } },
       },
     ],
   });

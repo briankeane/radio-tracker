@@ -21,10 +21,6 @@ describe("StationSong Model", function () {
     });
     stationSongs = result.stationSongs;
     songs = result.songs;
-    songs[0].audioUrl = null;
-    songs[1].audioUrl = null;
-    await songs[0].save();
-    await songs[1].save();
   });
 
   afterEach(async function () {
@@ -35,17 +31,6 @@ describe("StationSong Model", function () {
     let foundStationSongs = await db.models.StationSong.findAllActive({
       userId: user.id,
     });
-    assert.equal(foundStationSongs.length, stationSongs.length - 2);
-
-    let foundStationSongIds = foundStationSongs.map(
-      (stationSong) => stationSong.id
-    );
-    let activeStationSongIds = stationSongs
-      .slice(2)
-      .map((stationSong) => stationSong.id);
-    let inactiveStationSongIds = [stationSongs[0].id, stationSongs[1].id];
-
-    assert.notIncludeMembers(foundStationSongIds, inactiveStationSongIds);
-    assert.includeMembers(foundStationSongIds, activeStationSongIds);
+    assert.equal(foundStationSongs.length, stationSongs.length);
   });
 });

@@ -16,6 +16,7 @@ const moment = require("moment");
 
 const crypto = require("crypto");
 const { max } = require("../db/models/audioBlock.model");
+const logger = require("../logger");
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
@@ -123,28 +124,41 @@ function createSong(attrs) {
       if (created) eventStream.allEvents.publish(events.SONG_CREATED, { song });
       return resolve(song);
     }
+
+    var songData = {};
+
     const where = {
       [Op.or]: [{ spotifyId: attrs.spotifyId }, { isrc: attrs.isrc }],
     };
-    db.models.AudioBlock.findOrCreate({
-      where,
-      defaults: { ...attrs, ...{ type: "song" } },
-    })
-      .then(async ([song, created]) => {
-        if (created) {
-          let songData = await audioProvider.getDataForSong(song);
-          attrs = { ...songData, ...attrs };
-        }
-        return [await song.update(attrs), created];
+
+    audioProvider
+      .getDataForSong(attrs)
+      .then((foundSongData) => {
+        songData = foundSongData;
+        return db.models.AudioBlock.findOrCreate({
+          where,
+          defaults: { ...attrs, ...songData, ...{ type: "song" } },
+        });
       })
+      .then(async ([song, created]) => [
+        await song.update({ ...attrs, ...songData }),
+        created,
+      ])
       .then((result) => finish(result))
       .catch(async (err) => {
         if (err instanceof UniqueConstraintError) {
-          let consolidatedSong = await consolidateSongs({
-            where,
-            newSongAttrs: attrs,
-          });
-          return finish([consolidatedSong, false]);
+          try {
+            let consolidatedSong = await consolidateSongs({
+              where,
+              newSongAttrs: attrs,
+            });
+            return finish([consolidatedSong, false]);
+          } catch (newErr) {
+            logger.error("consolidation error!");
+            logger.error("err: ", err);
+            logger.error("newErr: ", newErr);
+            throw err;
+          }
         }
         throw err;
       })

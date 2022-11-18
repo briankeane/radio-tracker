@@ -72,7 +72,7 @@ services:
     env_file:
       - ./server/.env
     command:
-      ["node", "worker.js"]
+      ["npm", "run", "worker"]
 
   migrate:
     container_name: "migrate"

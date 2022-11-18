@@ -117,7 +117,6 @@ describe("User", function () {
         });
         stationSongs = result.stationSongs;
         songs = result.songs;
-        songs[3].audioUrl = null;
         await songs[3].save();
       });
 
@@ -129,7 +128,7 @@ describe("User", function () {
           .expect(200)
           .end(function (err, res) {
             if (err) return done(err);
-            assert.equal(res.body.stationSongs.length, stationSongs.length - 1);
+            assert.equal(res.body.stationSongs.length, stationSongs.length);
             // properly formatted nd populated
             assert.isOk(res.body.stationSongs[0].song);
             assert.isOk(res.body.stationSongs[0].song.id);

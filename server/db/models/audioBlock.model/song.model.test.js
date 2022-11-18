@@ -14,6 +14,7 @@ describe("Song Model", function () {
       artist: "Rachel Loy",
       title: "Stepladder",
       durationMS: 6000,
+      audioUrl: "https://www.example.com",
     });
   });
 

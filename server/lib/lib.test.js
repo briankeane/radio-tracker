@@ -23,6 +23,7 @@ const eventStream = require("./events");
 const events = require("./events/events");
 const errors = require("./errors");
 const nock = require("nock");
+const audioProvider = require("../lib/audioProvider");
 const { v4: UUID } = require("uuid");
 
 describe("User library functions", function () {
@@ -35,7 +36,18 @@ describe("User library functions", function () {
   });
 
   describe("User-oriented", function () {
-    var playolaUserSeed, getPlayolaUserSeedStub, userCreatedPublishStub;
+    var playolaUserSeed,
+      getPlayolaUserSeedStub,
+      userCreatedPublishStub,
+      audioProviderStub;
+
+    let audioProviderData = {
+      audioUrl: "https://www.example.com",
+      durationMS: 180000,
+      endOfIntroMS: 10000,
+      endOfMessageMS: 179000,
+      beginningOfOutroMS: 170000,
+    };
     const accessToken = "asdfafsd";
     const refreshToken = encryption.encrypt(
       api_token_swap_code_200["refresh_token"]
@@ -55,11 +67,15 @@ describe("User library functions", function () {
       getPlayolaUserSeedStub = sinon
         .stub(spotifyLib, "getPlayolaUserSeed")
         .resolves(playolaUserSeed);
+      audioProviderStub = sinon
+        .stub(audioProvider, "getDataForSong")
+        .resolves(audioProviderData);
     });
 
     afterEach(async function () {
       getPlayolaUserSeedStub.restore();
       userCreatedPublishStub.restore();
+      audioProviderStub.restore();
     });
 
     describe("CREATE", function () {
@@ -219,7 +235,6 @@ describe("User library functions", function () {
     });
 
     it("Gets the stationSongs with audio for a user", async function () {
-      songs[3].audioUrl = null;
       await songs[3].save();
 
       let retrievedStationSongs = await lib.getUsersStationSongs({
@@ -227,11 +242,10 @@ describe("User library functions", function () {
       });
 
       // leaves out the one with no audioUrl
-      assert.equal(retrievedStationSongs.length, stationSongs.length - 1);
+      assert.equal(retrievedStationSongs.length, stationSongs.length);
       let retrievedStationSongIds = retrievedStationSongs.map(
         (ss) => ss.songId
       );
-      assert.notInclude(retrievedStationSongIds, stationSongs[3].id);
 
       // properly formatted nd populated
       assert.isOk(retrievedStationSongs[0].song);
@@ -276,14 +290,25 @@ describe("User library functions", function () {
 
   describe("Song Lib Functions", function () {
     describe("Song Creation Functions", function () {
-      var eventsPublishStub;
+      var eventsPublishStub, audioProviderStub;
+      let audioProviderData = {
+        audioUrl: "https://www.example.com",
+        durationMS: 180000,
+        endOfIntroMS: 10000,
+        endOfMessageMS: 179000,
+        beginningOfOutroMS: 170000,
+      };
 
       beforeEach(function () {
         eventsPublishStub = sinon.stub(eventStream.allEvents, "publish");
+        audioProviderStub = sinon
+          .stub(audioProvider, "getDataForSong")
+          .resolves(audioProviderData);
       });
 
       afterEach(async function () {
         eventsPublishStub.restore();
+        audioProviderStub.restore();
       });
 
       describe("CreateSongViaSpotifyId", function () {
@@ -319,11 +344,13 @@ describe("User library functions", function () {
           assert.equal(createdSong.title, songSeed.title);
           assert.equal(createdSong.artist, songSeed.artist);
           assert.equal(createdSong.album, songSeed.album);
-          assert.equal(createdSong.durationMS, songSeed.durationMS);
           assert.equal(createdSong.popularity, songSeed.popularity);
           assert.equal(createdSong.isrc, songSeed.isrc);
           assert.equal(createdSong.spotifyId, songSeed.spotifyId);
           assert.equal(createdSong.imageUrl, songSeed.imageUrl);
+
+          // While we have dummy music, this is set by the audioGetter
+          // assert.equal(createdSong.durationMS, songSeed.durationMS);
 
           sinon.assert.calledOnce(spotifyTrackStub);
           sinon.assert.calledWith(spotifyTrackStub, {
@@ -398,22 +425,27 @@ describe("User library functions", function () {
           assert.equal(createdSong.title, expectedProps.title);
           assert.equal(createdSong.artist, expectedProps.artist);
           assert.equal(createdSong.album, expectedProps.album);
-          assert.equal(createdSong.durationMS, expectedProps.durationMS);
           assert.equal(createdSong.popularity, expectedProps.popularity);
-          assert.equal(
-            createdSong.endOfMessageMS,
-            expectedProps.endOfMessageMS
-          );
-          assert.equal(
-            createdSong.beginningOfOutroMS,
-            expectedProps.beginningOfOutroMS
-          );
-          assert.equal(createdSong.endOfIntroMS, expectedProps.endOfIntroMS);
-          assert.equal(createdSong.audioUrl, expectedProps.audioUrl);
           assert.equal(createdSong.isrc, expectedProps.isrc);
           assert.equal(createdSong.spotifyId, expectedProps.spotifyId);
           assert.equal(createdSong.imageUrl, expectedProps.imageUrl);
           assert.equal(createdSong.id, existingSong.id);
+
+          // These will change when we start getting real audio
+          assert.equal(
+            createdSong.endOfMessageMS,
+            audioProviderData.endOfMessageMS
+          );
+          assert.equal(
+            createdSong.beginningOfOutroMS,
+            audioProviderData.beginningOfOutroMS
+          );
+          assert.equal(createdSong.audioUrl, audioProviderData.audioUrl);
+          assert.equal(createdSong.durationMS, audioProviderData.durationMS);
+          assert.equal(
+            createdSong.endOfIntroMS,
+            audioProviderData.endOfIntroMS
+          );
         });
 
         it("only updates if a matching spotifyId exists", async function () {
@@ -437,21 +469,26 @@ describe("User library functions", function () {
           assert.equal(createdSong.title, expectedProps.title);
           assert.equal(createdSong.artist, expectedProps.artist);
           assert.equal(createdSong.album, expectedProps.album);
-          assert.equal(createdSong.durationMS, expectedProps.durationMS);
           assert.equal(createdSong.popularity, expectedProps.popularity);
-          assert.equal(
-            createdSong.endOfMessageMS,
-            expectedProps.endOfMessageMS
-          );
-          assert.equal(
-            createdSong.beginningOfOutroMS,
-            expectedProps.beginningOfOutroMS
-          );
-          assert.equal(createdSong.endOfIntroMS, expectedProps.endOfIntroMS);
-          assert.equal(createdSong.audioUrl, expectedProps.audioUrl);
           assert.equal(createdSong.isrc, expectedProps.isrc);
           assert.equal(createdSong.spotifyId, expectedProps.spotifyId);
           assert.equal(createdSong.id, existingSong.id);
+
+          // These will change when we start getting real audio
+          assert.equal(
+            createdSong.endOfMessageMS,
+            audioProviderData.endOfMessageMS
+          );
+          assert.equal(
+            createdSong.beginningOfOutroMS,
+            audioProviderData.beginningOfOutroMS
+          );
+          assert.equal(createdSong.audioUrl, audioProviderData.audioUrl);
+          assert.equal(createdSong.durationMS, audioProviderData.durationMS);
+          assert.equal(
+            createdSong.endOfIntroMS,
+            audioProviderData.endOfIntroMS
+          );
         });
 
         it("does not trigger the SONG_CREATED event if the song was only updated", async function () {
@@ -514,6 +551,7 @@ describe("User library functions", function () {
 
           it("consolidates if spotifyId and isrc exist", async function () {
             let createdSong = await lib.createSong(expectedProps);
+
             assert.equal(createdSong.title, expectedProps.title);
             assert.equal(createdSong.artist, expectedProps.artist);
             assert.equal(createdSong.album, expectedProps.album);
@@ -611,7 +649,9 @@ describe("User library functions", function () {
               songs.map((song) => song.artist).includes(seed.artist)
             );
             assert.isTrue(
-              songs.map((song) => song.durationMS).includes(seed.durationMS)
+              songs
+                .map((song) => song.durationMS)
+                .includes(audioProviderData.durationMS)
             );
             assert.isTrue(
               songs.map((song) => song.artist).includes(seed.artist)

@@ -62,7 +62,7 @@ class AudioProvider {
   getDataForSong() {
     // for now you just get a url with Rachel's longest song.
     this.count++;
-    if (this.count > songs.length) {
+    if (this.count === songs.length) {
       this.count = 0;
     }
     return Promise.resolve(songs[this.count]);

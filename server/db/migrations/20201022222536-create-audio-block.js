@@ -1,19 +1,19 @@
-'use strict';
+"use strict";
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('audioBlocks', {
+    await queryInterface.createTable("audioBlocks", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
         defaultValue: Sequelize.UUIDV4,
         allowNull: false,
         autoIncrement: false,
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE',
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       type: {
         type: Sequelize.ENUM,
-        values: ['song', 'commercial', 'voicetrack'],
+        values: ["song", "commercial", "voicetrack"],
       },
       title: {
         type: Sequelize.STRING,
@@ -34,7 +34,10 @@ module.exports = {
       endOfIntroMS: Sequelize.INTEGER,
       beginningOfOutroMS: Sequelize.INTEGER,
       audioIsVerified: Sequelize.BOOLEAN,
-      audioUrl: Sequelize.STRING,
+      audioUrl: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
       isrc: {
         type: Sequelize.STRING,
         unique: true,
@@ -56,6 +59,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('audioBlocks');
+    await queryInterface.dropTable("audioBlocks");
   },
 };

@@ -44,7 +44,10 @@ const AudioBlock = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
-    audioUrl: DataTypes.STRING,
+    audioUrl: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     audioGetterId: DataTypes.STRING,
     isrc: {
       type: DataTypes.STRING,

@@ -14,7 +14,6 @@ const {
 } = require("../../test/testDataGenerator");
 const {
   clearDatabase,
-  logPlaylist,
   assertCommercialsAreImmediatelyAfterTopAndBottomofHour,
   assertHasConsecutivePlaylistPositions,
 } = require("../../test/test.helpers");
@@ -23,6 +22,7 @@ const moment = require("moment");
 const SongChooser = require("./songChooser");
 const CommercialChooser = require("./commercialChooser");
 const spotifyLib = require("../spotify/spotify.lib");
+const { prettyPrintTime } = require("../../lib/debugTools");
 
 var timeFormat = "h:mm:ssa YYYY-MM-D";
 moment.defaultFormat = timeFormat;
@@ -137,7 +137,7 @@ describe("Playlist Scheduling", function () {
     });
   });
 
-  describe("TODO: Add tests for reformatSchedule, moveSpin", function () {
+  describe("TODO: Add tests for moveSpin", function () {
     it("move spin backwards", async function () {
       let longSong = await createSong(db, {
         durationMS: 210200,
@@ -190,6 +190,10 @@ describe("Playlist Scheduling", function () {
       const result = await createStationSongsWithSongs(db, {
         userId: user.id,
         count: 10,
+        songData: {
+          endOfMessageMS: 180000,
+          durationMS: 181000,
+        },
       });
       songs = result.songs;
       spinData = {
@@ -216,6 +220,31 @@ describe("Playlist Scheduling", function () {
         voicetrack2 = await createVoicetrack(db, { durationMS: 40000 });
       }
     });
+
+    describe("reformatSchedule()", function () {
+      it("sets the proper time for song/voicetrack/song", async function () {
+        currentPlaylist[3].audioBlock.type = "voicetrack";
+        currentPlaylist[3].audioBlock.title = "VoiceTrack";
+        currentPlaylist[3].audioBlock.endOfMessageMS = 10000;
+        currentPlaylist[3].audioBlock.durationMS = 10000;
+        currentPlaylist[2].audioBlock.endOfMessageMS = 150000;
+        currentPlaylist[2].audioBlock.beginningOfOutroMS = 130000;
+
+        await currentPlaylist[3].audioBlock.save();
+        await currentPlaylist[2].audioBlock.save();
+
+        await currentPlaylist[3].reload({ include: [db.models.AudioBlock] });
+        await currentPlaylist[2].reload({ include: [db.models.AudioBlock] });
+
+        const newPlaylist = await generator.reformatSchedule({
+          playlistSlice: currentPlaylist,
+        });
+
+        assert.equal(newPlaylist[3].audioBlock.type, "voicetrack");
+        assert.equal(prettyPrintTime(newPlaylist[3].airtime), "1:11:25");
+      });
+    });
+
     it("starts 10 secs ago if there are no previous spins", function () {
       const airtime = generator.airtimeForSpin({
         currentPlaylist: [],
@@ -325,13 +354,13 @@ describe("Playlist Scheduling", function () {
         previousSpin.audioBlock.endOfMessageMS = 178000;
         spinData.audioBlock = voicetrack1;
         voicetrack1.durationMS = 6001;
+        voicetrack1.endOfMessageMS = 5001;
         let airtime = generator.airtimeForSpin({ currentPlaylist, spinData });
         assert.sameMoment(
           airtime,
-          moment(previousSpin.airtime).add(
-            spinData.audioBlock.durationMS / 2,
-            "milliseconds"
-          )
+          moment(previousSpin.airtime)
+            .add(previousSpin.audioBlock.endOfMessageMS)
+            .subtract(voicetrack1.endOfMessageMS / 2, "milliseconds")
         );
       });
     });

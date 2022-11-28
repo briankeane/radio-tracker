@@ -11,7 +11,7 @@ eventStream.connectWithRetry().then(() => {
   logger.log("Worker Started");
 });
 
-cron.schedule("*/15 * * * *", async () => {
+async function updateAllPlaylists() {
   logger.log("WORKER updating playlists");
   let allUsersRaw = await db.models.User.findAll(
     {},
@@ -24,4 +24,11 @@ cron.schedule("*/15 * * * *", async () => {
   }
   await Promise.allSettled(promises);
   logger.log("Playlist Updates Complete");
+}
+
+cron.schedule("*/15 * * * *", async () => {
+  await updateAllPlaylists();
 });
+
+// run once when it starts
+updateAllPlaylists();

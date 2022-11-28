@@ -147,7 +147,7 @@ async function reformatSchedule({ playlistSlice }) {
       ) !== currentAirtimeBlock
     ) {
       var commercial =
-        commercials.pop() || (await new CommercialChooser.chooseCommercial());
+        commercials.pop() || (await new CommercialChooser().chooseCommercial());
       commercial.playlistPosition = playlistPositionTracker;
       playlistPositionTracker++;
 

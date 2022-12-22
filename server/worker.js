@@ -30,5 +30,14 @@ cron.schedule("*/15 * * * *", async () => {
   await updateAllPlaylists();
 });
 
+// Erase everything before midnight this morning
+cron.schedule("0 0 20 * * *", async () => {
+  await db.models.Spin.destroy({
+    where: {
+      createdAt: { [Op.lte]: new Date().setUTCHours(0, 0, 0, 0) },
+    },
+  });
+});
+
 // run once when it starts
 updateAllPlaylists();

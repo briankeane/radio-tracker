@@ -19,7 +19,6 @@ async function updateAllPlaylists() {
   );
   let promises = [];
   for (let user of allUsersRaw) {
-    console.log("here");
     promises.push(playlistGenerator.generatePlaylist({ userId: user.id }));
   }
   await Promise.allSettled(promises);
@@ -53,3 +52,4 @@ cron.schedule("0 0 20 * * *", async () => {
 
 // run once when it starts
 updateAllPlaylists();
+deleteOldSpins();

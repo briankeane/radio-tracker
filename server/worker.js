@@ -26,8 +26,20 @@ async function updateAllPlaylists() {
   logger.log("Playlist Updates Complete");
 }
 
+async function deleteOldSpins() {
+  logger.log("WORKER removing old spins");
+  await db.models.Spin.destroy({
+    where: {
+      createdAt: {
+        [Op.lte]: new Date(new Date().getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
+      },
+    },
+  });
+}
+
 cron.schedule("*/15 * * * *", async () => {
   await updateAllPlaylists();
+  await deleteOldSpins();
 });
 
 // Erase everything before midnight this morning

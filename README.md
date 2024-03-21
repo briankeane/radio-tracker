@@ -2,9 +2,7 @@
 
 | Environment | Branch  | URL                                                    | CI                                                                                                                                                                                                                                               | Documentation                           |
 | ----------- | ------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| Development | develop | https://dev.playola.fm <br> https://api-dev.playola.fm | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/briankeane/playola/tree/develop.svg?style=svg&circle-token=c26b381796904c24cdcb23490aa30ab6d80f9698)](https://dl.circleci.com/status-badge/redirect/gh/briankeane/playola/tree/develop) | [Docs](https://api-dev.playola.fm/docs) |
-| Production  | master  | https://playola.fm <br> https://api.playola.fm         | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/briankeane/playola/tree/master.svg?style=svg&circle-token=c26b381796904c24cdcb23490aa30ab6d80f9698)](https://dl.circleci.com/status-badge/redirect/gh/briankeane/playola/tree/master)   | [Docs](https://playola.fm/docs)         |
-
+| Development | develop | https://dev.playola.fm <br> https://admin.playola.fm | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/briankeane/playola/tree/develop.svg?style=svg&circle-token=CCIPRJ_4VijKqPEovM5E7dGSTrXAi_80ca87be7dde79ffd962a4d4c350fd636a57db68)](https://dl.circleci.com/status-badge/redirect/gh/briankeane/playola/tree/develop) | [Docs](https://api-dev.playola.fm/docs) |
 
 
 ## Local Installation
@@ -42,4 +40,5 @@ Clients can authorize via the [Spotify Authorization Code Flow](https://develope
 7. When the client's spotify accessToken expires, it can swap the refreshToken for a new one at `/v1/auth/spotify/swap`.
 
 
-### 
+### Songs and stationSongs
+

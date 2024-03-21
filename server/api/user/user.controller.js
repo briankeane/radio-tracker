@@ -1,19 +1,19 @@
-const lib = require("../../lib/lib");
-const APIError = require("../apiError");
-const { generateToken } = require("../../lib/jwt");
+const lib = require('../../lib/lib');
+const APIError = require('../apiError');
+const { generateToken } = require('../../lib/jwt');
 
 function createUser(req, res) {
-  const { spotifyRefreshToken } = req.body;
+  const { spotifyAccessToken, spotifyRefreshToken } = req.body;
 
   lib
-    .createUserViaSpotifyRefreshToken({ refreshToken: spotifyRefreshToken })
+    .createUserViaSpotifyTokens({ refreshToken: spotifyRefreshToken })
     .then((user) => generateToken(user))
     .then((token) => res.status(201).json({ token }))
     .catch((err) => res.status(400).json(err));
 }
 
 function getUser(req, res) {
-  const isMe = req.params?.userId === "me";
+  const isMe = req.params?.userId === 'me';
   const userId = isMe ? req.user.id : req.params.userId;
 
   lib

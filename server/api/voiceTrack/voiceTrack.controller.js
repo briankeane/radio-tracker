@@ -1,6 +1,6 @@
-const lib = require("../../lib/lib");
-const APIError = require("../apiError");
-const { generateToken } = require("../../lib/jwt");
+const lib = require('../../lib/lib');
+const APIError = require('../apiError');
+const { generateToken } = require('../../lib/jwt');
 
 function createVoiceTrack(req, res) {
   const { filename, durationMS } = req.body;
@@ -16,7 +16,6 @@ function createUploadUrl(req, res) {
   const { presignedUrl, filename } = lib.createPresignedUploadUrl({
     userId: req.user.id,
   });
-  console.log("uploadUrl: ", presignedUrl);
   return res.status(200).json({ presignedUrl, filename });
 }
 

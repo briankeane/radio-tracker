@@ -1,35 +1,41 @@
-const db = require("../db");
-const eventStream = require("./events");
-const spotifyLib = require("./spotify/spotify.lib");
-const events = require("./events/events");
-const errors = require("./errors");
-const playlistGenerator = require("./playlists/playlistGenerator");
-const { Op, UniqueConstraintError } = require("sequelize");
-const audioProvider = require("./audioProvider");
-const AWS = require("aws-sdk");
+const db = require('../db');
+const eventStream = require('./events');
+const spotifyLib = require('./spotify/spotify.lib');
+const events = require('./events/events');
+const errors = require('./errors');
+const playlistGenerator = require('./playlists/playlistGenerator');
+const { Op, UniqueConstraintError } = require('sequelize');
+const audioProvider = require('./audioProvider');
+const AWS = require('aws-sdk');
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
-const s3 = new AWS.S3({ signatureVersion: "v4" });
-const moment = require("moment");
+const s3 = new AWS.S3({ signatureVersion: 'v4' });
+const moment = require('moment');
 
-const crypto = require("crypto");
-const { max } = require("../db/models/audioBlock.model");
-const logger = require("../logger");
+const crypto = require('crypto');
+const { max } = require('../db/models/audioBlock.model');
+const logger = require('../logger');
 
 const NUMBER_OF_SONGS_TO_REQUEST = 200;
 
 /*
  * Users
  */
-const createUserViaSpotifyRefreshToken = async function ({ refreshToken }) {
+const createUserViaSpotifyTokens = async function ({
+  accessToken,
+  refreshToken,
+}) {
   function finish(user, created) {
     if (created) eventStream.allEvents.publish(events.USER_CREATED, { user });
     return user;
   }
 
-  let profile = await spotifyLib.getPlayolaUserSeed({ refreshToken });
+  let profile = await spotifyLib.getPlayolaUserSeed({
+    accessToken,
+    refreshToken,
+  });
   const [user, created] = await db.models.User.findOrCreate({
     where: { spotifyUserId: profile.spotifyUserId },
     defaults: {
@@ -47,7 +53,7 @@ const getUser = async function ({ userId, extendedPlaylist = false }) {
     extended: extendedPlaylist,
   });
   if (playlist.length) {
-    user.setDataValue("playlist", playlist);
+    user.setDataValue('playlist', playlist);
   }
   return user;
 };
@@ -77,7 +83,7 @@ const getUsersStationSongs = async function ({ userId }) {
     include: [
       {
         model: db.models.Song,
-        as: "song",
+        as: 'song',
         where: { audioUrl: { [Op.ne]: null } },
       },
     ],
@@ -137,7 +143,7 @@ function createSong(attrs) {
         songData = foundSongData;
         return db.models.AudioBlock.findOrCreate({
           where,
-          defaults: { ...attrs, ...songData, ...{ type: "song" } },
+          defaults: { ...attrs, ...songData, ...{ type: 'song' } },
         });
       })
       .then(async ([song, created]) => [
@@ -154,9 +160,9 @@ function createSong(attrs) {
             });
             return finish([consolidatedSong, false]);
           } catch (newErr) {
-            logger.error("consolidation error!");
-            logger.error("err: ", err);
-            logger.error("newErr: ", newErr);
+            logger.error('consolidation error!');
+            logger.error('err: ', err);
+            logger.error('newErr: ', newErr);
             throw err;
           }
         }
@@ -198,17 +204,17 @@ async function initializeSongsForUser({ user }) {
   // `include` does not work on `create()`, so we've got to go get 'em afterwards
   const retrievedStationSongs = await db.models.StationSong.findAll({
     where: { userId: user.id },
-    include: [{ model: db.models.User }, { model: db.models.Song, as: "song" }],
+    include: [{ model: db.models.User }, { model: db.models.Song, as: 'song' }],
   });
 
   return { stationSongs: retrievedStationSongs, user };
 }
 
 function createPresignedUploadUrl({ userId }) {
-  const dateStr = moment().format("DD-MM-YYYY-h-mm-ss");
+  const dateStr = moment().format('DD-MM-YYYY-h-mm-ss');
   const filename = `${userId}--${dateStr}.m4a`;
 
-  const presignedUrl = s3.getSignedUrl("putObject", {
+  const presignedUrl = s3.getSignedUrl('putObject', {
     Bucket: process.env.VOICETRACKS_BUCKET,
     Key: filename,
     Expires: 60 * 5,
@@ -257,7 +263,7 @@ function cleanUserSeed(seed) {
 }
 
 module.exports = {
-  createUserViaSpotifyRefreshToken,
+  createUserViaSpotifyTokens,
   getUsersStationSongs,
   getUser,
   moveSpin,

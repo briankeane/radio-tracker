@@ -1,6 +1,6 @@
-const { assert } = require("chai");
-const logger = require("../logger");
-const moment = require("moment");
+const { assert } = require('chai');
+const logger = require('../logger');
+const moment = require('moment');
 
 /*
  * Duplicates from playlistGenerator.js for tests
@@ -14,7 +14,7 @@ function getAirtimeBlock(airtime) {
 }
 
 async function clearDatabase(db) {
-  if (process.env.NODE_ENV !== "test") return; // for safety
+  if (process.env.NODE_ENV !== 'test') return; // for safety
   for (let model of Object.keys(db.models)) {
     await db.models[model].destroy({ where: {}, force: true });
   }
@@ -36,7 +36,7 @@ async function waitForInstanceToExist(
         currentTimeoutCount + 10
       );
     } else {
-      throw assert.fail("model failed to create");
+      throw assert.fail('model failed to create');
     }
   } else {
     return results[0];
@@ -88,27 +88,27 @@ function assertCommercialsAreImmediatelyAfterTopAndBottomofHour(playlist) {
     if (getAirtimeBlock(spin.airtime) !== currentAirtimeBlock) {
       assert.equal(
         spin.audioBlock.type,
-        "commercial",
-        "expected commercial not present"
+        'commercial',
+        'expected commercial not present'
       );
       currentAirtimeBlock = getAirtimeBlock(spin.airtime);
     } else {
       assert.notEqual(
         spin.audioBlock.type,
-        "commercial",
-        "commercial found in the wrong place"
+        'commercial',
+        'commercial found in the wrong place'
       );
     }
   }
 }
 
-function logPlaylist(playlist, msg = "playlist log:") {
+function logPlaylist(playlist, msg = 'playlist log:') {
   console.log(`---------------------- ${msg} ---------------------------`);
   console.table(
     playlist.map((spin) => ({
       playlistPosition: spin.playlistPosition,
       title: spin.audioBlock.title,
-      airtime: moment(spin.airtime).format("h:mm:ss"),
+      airtime: moment(spin.airtime).format('h:mm:ss'),
       audioUrl: spin.audioBlock.audioUrl,
       endOfMessageMS: spin.audioBlock.endOfMessageMS,
       beginningOfOutroMS: spin.audioBlock.beginningOfOutroMS,
@@ -119,8 +119,11 @@ function logPlaylist(playlist, msg = "playlist log:") {
 
 function checkAndClearNocks(nock) {
   if (!nock.isDone()) {
-    logger.always.log("remaining Nocks: ", nock.pendingMocks());
-    throw assert.fail("Not all nock interceptors were used!");
+    console.log(nock.pendingMocks());
+    logger.always.log(
+      'remaining Nocks: ' + JSON.stringify(nock.pendingMocks(), 0, 2)
+    );
+    throw assert.fail('Not all nock interceptors were used!');
   }
   nock.cleanAll();
 }

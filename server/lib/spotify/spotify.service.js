@@ -14,18 +14,17 @@ const api = axios.create({
 });
 
 const SPOTIFY_SCOPES = [
-  'playlist-read-private',
-  'playlist-modify-private',
-  'user-library-read',
+  'playlist-read-collaborative',
   'user-follow-read',
-  'user-library-modify',
+  'user-read-playback-position',
   'user-top-read',
-  'user-read-currently-playing',
   'user-read-recently-played',
-  'ugc-image-upload',
-  'user-read-birthdate',
+  'user-library-read',
   'user-read-email',
-].join(' ');
+  'user-read-currently-playing',
+  'user-modify-playback-state',
+  'user-read-playback-state',
+].join(',');
 
 const TopTracksTimeRange = {
   LONG_TERM: 'long_term',

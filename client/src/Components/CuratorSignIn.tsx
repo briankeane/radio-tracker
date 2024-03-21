@@ -5,7 +5,7 @@ function CuratorSignIn() {
   return (
     <div style={{ backgroundColor: 'black', justifyContent: 'center'}}>
       <Typography align='center'>
-      <a href={`${import.meta.env.VITE_BACKEND_BASE_URL}/v1/auth/spotify/authorize`}>
+      <a href={`${import.meta.env.VITE_BACKEND_BASE_URL}/v1/auth/spotify/web/authorize`}>
         <Button
         style={{
           borderRadius: 35,

@@ -57,7 +57,6 @@ function CuratorDetail() {
       const result = await axios.get(
         `${import.meta.env.VITE_BACKEND_BASE_URL}/v1/curators/${curatorId}/curatorTracks`
       );
-      console.log(result);
       if (!result?.data?.length) {
         const result = await axios.post(
           `${import.meta.env.VITE_BACKEND_BASE_URL}/v1/curators/${curatorId}/refreshCuratorTracks`

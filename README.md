@@ -1,8 +1,8 @@
 ## Environments
 
-| Environment | Branch  | URL                                                    | CI                                                                                                                                                                                                                                               | Documentation                           |
+| Environment | Branch  | URLS                                                    | CI                                                                                                                                                                                                                                               | Documentation                           |
 | ----------- | ------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| Development | develop | https://dev.playola.fm <br> https://admin.playola.fm | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/briankeane/playola/tree/develop.svg?style=svg&circle-token=CCIPRJ_4VijKqPEovM5E7dGSTrXAi_80ca87be7dde79ffd962a4d4c350fd636a57db68)](https://dl.circleci.com/status-badge/redirect/gh/briankeane/playola/tree/develop) | [Docs](https://api-dev.playola.fm/docs) |
+| Development | develop | https://admin-api.playola.fm <br> https://admin.playola.fm | [![CircleCI](https://dl.circleci.com/status-badge/img/gh/briankeane/playola/tree/develop.svg?style=svg&circle-token=CCIPRJ_4VijKqPEovM5E7dGSTrXAi_80ca87be7dde79ffd962a4d4c350fd636a57db68)](https://dl.circleci.com/status-badge/redirect/gh/briankeane/playola/tree/develop) | [Docs](https://api-dev.playola.fm/docs) |
 
 
 ## Local Installation
@@ -13,9 +13,11 @@
   * `./server/.env`  -- example file at `./server/.env-example`
 * Running the following command from the root should install all containers and connect them together.
 
-'''
+
+```
 docker-compose up
-'''
+
+```
 
 * the server will be up and running at https://127.0.0.1:10020.  After it's running you can use the healthcheck endpoint to make sure: http://localhost:10020/v1/healthcheck
 
@@ -41,4 +43,7 @@ Clients can authorize via the [Spotify Authorization Code Flow](https://develope
 
 
 ### Songs and stationSongs
+
+When a user is created, it fires a USER_CREATED event.  A worker picks up this event and asks spotify for all songs related to the user.
+
 

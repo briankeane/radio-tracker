@@ -1,14 +1,14 @@
-const { assert } = require("chai");
-const lib = require("./lib");
-const db = require("../db");
+const { assert } = require('chai');
+const lib = require('./lib');
+const db = require('../db');
 const models = db.models;
-const sinon = require("sinon");
-const { clearDatabase } = require("../test/test.helpers");
-const spotifyLib = require("./spotify/spotify.lib");
+const sinon = require('sinon');
+const { clearDatabase } = require('../test/test.helpers');
+const spotifyLib = require('./spotify/spotify.lib');
 const {
   api_get_me_200,
   api_token_swap_code_200,
-} = require("../test/mockResponses/spotify");
+} = require('../test/mockResponses/spotify');
 const {
   createPlayolaUserSeed,
   createUser,
@@ -17,16 +17,16 @@ const {
   createStationSongsWithSongs,
   createSpinsWithSongs,
   createSpotifyUser,
-} = require("../test/testDataGenerator");
-const encryption = require("./spotify/spotify.encryption");
-const eventStream = require("./events");
-const events = require("./events/events");
-const errors = require("./errors");
-const nock = require("nock");
-const audioProvider = require("../lib/audioProvider");
-const { v4: UUID } = require("uuid");
+} = require('../test/testDataGenerator');
+const encryption = require('./spotify/spotify.encryption');
+const eventStream = require('./events');
+const events = require('./events/events');
+const errors = require('./errors');
+const nock = require('nock');
+const audioProvider = require('../lib/audioProvider');
+const { v4: UUID } = require('uuid');
 
-describe("User library functions", function () {
+describe('User library functions', function () {
   before(async function () {
     await clearDatabase(db);
   });
@@ -35,25 +35,25 @@ describe("User library functions", function () {
     await clearDatabase(db);
   });
 
-  describe("User-oriented", function () {
+  describe('User-oriented', function () {
     var playolaUserSeed,
       getPlayolaUserSeedStub,
       userCreatedPublishStub,
       audioProviderStub;
 
     let audioProviderData = {
-      audioUrl: "https://www.example.com",
+      audioUrl: 'https://www.example.com',
       durationMS: 180000,
       endOfIntroMS: 10000,
       endOfMessageMS: 179000,
       beginningOfOutroMS: 170000,
     };
-    const accessToken = "asdfafsd";
+    const accessToken = 'asdfafsd';
     const refreshToken = encryption.encrypt(
-      api_token_swap_code_200["refresh_token"]
+      api_token_swap_code_200['refresh_token']
     );
-    const spotifyUserId = "aSpotifyUID";
-    const email = api_get_me_200["email"];
+    const spotifyUserId = 'aSpotifyUID';
+    const email = api_get_me_200['email'];
 
     beforeEach(async function () {
       playolaUserSeed = createPlayolaUserSeed({ spotifyUserId, email });
@@ -63,12 +63,12 @@ describe("User library functions", function () {
         spotifyUserId,
         email,
       });
-      userCreatedPublishStub = sinon.stub(eventStream.allEvents, "publish");
+      userCreatedPublishStub = sinon.stub(eventStream.allEvents, 'publish');
       getPlayolaUserSeedStub = sinon
-        .stub(spotifyLib, "getPlayolaUserSeed")
+        .stub(spotifyLib, 'getPlayolaUserSeed')
         .resolves(playolaUserSeed);
       audioProviderStub = sinon
-        .stub(audioProvider, "getDataForSong")
+        .stub(audioProvider, 'getDataForSong')
         .resolves(audioProviderData);
     });
 
@@ -78,17 +78,19 @@ describe("User library functions", function () {
       audioProviderStub.restore();
     });
 
-    describe("CREATE", function () {
-      it("just gets a user if they already exist", async function () {
+    describe('CREATE', function () {
+      it('just gets a user if they already exist', async function () {
         let existingUser = await db.models.User.create(playolaUserSeed);
-        let createdUser = await lib.createUserViaSpotifyRefreshToken({
+        let createdUser = await lib.createUserViaSpotifyTokens({
+          accessToken,
           refreshToken,
         });
         assert.equal(createdUser.id, existingUser.id);
       });
 
-      it("creates a user if they do not exist", async function () {
-        let createdUser = await lib.createUserViaSpotifyRefreshToken({
+      it('creates a user if they do not exist', async function () {
+        let createdUser = await lib.createUserViaSpotifyTokens({
+          accessToken,
           refreshToken,
         });
         assert.ok(createdUser);
@@ -100,8 +102,9 @@ describe("User library functions", function () {
         assert.equal(createdUser.spotifyUserId, playolaUserSeed.spotifyUserId);
       });
 
-      it("broadcasts an event if the user was created", async function () {
-        let createdUser = await lib.createUserViaSpotifyRefreshToken({
+      it('broadcasts an event if the user was created', async function () {
+        let createdUser = await lib.createUserViaSpotifyTokens({
+          accessToken,
           refreshToken,
         });
         sinon.assert.calledOnce(userCreatedPublishStub);
@@ -110,21 +113,24 @@ describe("User library functions", function () {
         });
       });
 
-      it("does not broadcast an event if the user was just updated", async function () {
+      it('does not broadcast an event if the user was just updated', async function () {
         await db.models.User.create(playolaUserSeed);
-        await lib.createUserViaSpotifyRefreshToken({ refreshToken });
+        await lib.createUserViaSpotifyTokens({
+          accessToken,
+          refreshToken,
+        });
         sinon.assert.notCalled(userCreatedPublishStub);
       });
     });
 
-    describe("GET", function () {
-      it("GETS a user", async function () {
+    describe('GET', function () {
+      it('GETS a user', async function () {
         let user = await createUser(db);
         let foundUser = await lib.getUser({ userId: user.id });
         assert.equal(foundUser.id, user.id);
       });
 
-      it("GETS a user with a playlist", async function () {
+      it('GETS a user with a playlist', async function () {
         let user = await createUser(db);
         let { spins } = await createSpinsWithSongs(db, {
           userId: user.id,
@@ -132,7 +138,7 @@ describe("User library functions", function () {
           startingAirtime: new Date(new Date().getTime() - 5 * 60 * 1000),
         });
         let foundUser = await lib.getUser({ userId: user.id });
-        let foundPlaylist = foundUser.get("playlist");
+        let foundPlaylist = foundUser.get('playlist');
         assert.ok(foundPlaylist);
         assert.equal(foundPlaylist.length, 3);
         assert.sameMembers(
@@ -141,7 +147,7 @@ describe("User library functions", function () {
         );
       });
 
-      it("only gets within a 30 minute window", async function () {
+      it('only gets within a 30 minute window', async function () {
         let user = await createUser(db);
         let { spins } = await createSpinsWithSongs(db, {
           userId: user.id,
@@ -159,7 +165,7 @@ describe("User library functions", function () {
           startingAirtime: new Date(new Date().getTime() + 30 * 60 * 1000),
         });
         let foundUser = await lib.getUser({ userId: user.id });
-        let foundPlaylist = foundUser.get("playlist");
+        let foundPlaylist = foundUser.get('playlist');
         assert.ok(foundPlaylist);
         assert.equal(foundPlaylist.length, 3);
         assert.sameMembers(
@@ -197,7 +203,7 @@ describe("User library functions", function () {
           userId: user.id,
           extendedPlaylist: true,
         });
-        let foundPlaylist = foundUser.get("playlist");
+        let foundPlaylist = foundUser.get('playlist');
         assert.ok(foundPlaylist);
         assert.equal(foundPlaylist.length, 4);
         assert.sameMembers(
@@ -212,7 +218,7 @@ describe("User library functions", function () {
     });
   });
 
-  describe("station-oriented", function () {
+  describe('station-oriented', function () {
     let user, stationSongs, songs;
 
     beforeEach(async function () {
@@ -225,16 +231,16 @@ describe("User library functions", function () {
       songs = result.songs;
     });
 
-    it("returns User Not Found if the user does not exist", async function () {
+    it('returns User Not Found if the user does not exist', async function () {
       try {
         await lib.getUsersStationSongs({ userId: UUID() });
-        assert.fail("error should be thrown");
+        assert.fail('error should be thrown');
       } catch (err) {
         assert.equal(err.message, errors.USER_NOT_FOUND);
       }
     });
 
-    it("Gets the stationSongs with audio for a user", async function () {
+    it('Gets the stationSongs with audio for a user', async function () {
       await songs[3].save();
 
       let retrievedStationSongs = await lib.getUsersStationSongs({
@@ -261,19 +267,19 @@ describe("User library functions", function () {
    */
   function defaultProps() {
     return {
-      title: "Too Much Love",
-      artist: "Rachel Loy",
-      album: "Not Yet",
+      title: 'Too Much Love',
+      artist: 'Rachel Loy',
+      album: 'Not Yet',
       durationMS: 180000,
       popularity: 100,
-      youTubeId: "thisfersnet",
+      youTubeId: 'thisfersnet',
       endOfMessageMS: 160000,
       beginningOfOutroMS: 150000,
       endOfIntroMS: 3000,
-      audioUrl: "https://songs.playola.fm/tooMuchLove.m4a",
-      isrc: "thisisanisrc",
-      spotifyId: "thisIsTheSpotifyID",
-      imageUrl: "https://pics.albums.images.com/a-pic.jpg",
+      audioUrl: 'https://songs.playola.fm/tooMuchLove.m4a',
+      isrc: 'thisisanisrc',
+      spotifyId: 'thisIsTheSpotifyID',
+      imageUrl: 'https://pics.albums.images.com/a-pic.jpg',
     };
   }
 
@@ -288,11 +294,11 @@ describe("User library functions", function () {
     });
   }
 
-  describe("Song Lib Functions", function () {
-    describe("Song Creation Functions", function () {
+  describe('Song Lib Functions', function () {
+    describe('Song Creation Functions', function () {
       var eventsPublishStub, audioProviderStub;
       let audioProviderData = {
-        audioUrl: "https://www.example.com",
+        audioUrl: 'https://www.example.com',
         durationMS: 180000,
         endOfIntroMS: 10000,
         endOfMessageMS: 179000,
@@ -300,9 +306,9 @@ describe("User library functions", function () {
       };
 
       beforeEach(function () {
-        eventsPublishStub = sinon.stub(eventStream.allEvents, "publish");
+        eventsPublishStub = sinon.stub(eventStream.allEvents, 'publish');
         audioProviderStub = sinon
-          .stub(audioProvider, "getDataForSong")
+          .stub(audioProvider, 'getDataForSong')
           .resolves(audioProviderData);
       });
 
@@ -311,23 +317,23 @@ describe("User library functions", function () {
         audioProviderStub.restore();
       });
 
-      describe("CreateSongViaSpotifyId", function () {
+      describe('CreateSongViaSpotifyId', function () {
         var spotifyTrackStub, songSeed, spotifyUser;
 
         beforeEach(async function () {
           songSeed = {
-            title: "Cut To The Feeling",
-            artist: "Carly Rae Jepsen",
-            album: "Cut To The Feeling",
+            title: 'Cut To The Feeling',
+            artist: 'Carly Rae Jepsen',
+            album: 'Cut To The Feeling',
             durationMS: 207959,
             popularity: 63,
-            isrc: "USUM71703861",
-            spotifyId: "11dFghVXANMlKmJXsNCbNl",
+            isrc: 'USUM71703861',
+            spotifyId: '11dFghVXANMlKmJXsNCbNl',
             imageUrl:
-              "https://i.scdn.co/image/966ade7a8c43b72faa53822b74a899c675aaafee",
+              'https://i.scdn.co/image/966ade7a8c43b72faa53822b74a899c675aaafee',
           };
           spotifyTrackStub = sinon
-            .stub(spotifyLib, "getSongSeedFromSpotifyId")
+            .stub(spotifyLib, 'getSongSeedFromSpotifyId')
             .resolves(songSeed);
           spotifyUser = await createSpotifyUser(db);
         });
@@ -336,7 +342,7 @@ describe("User library functions", function () {
           spotifyTrackStub.restore();
         });
 
-        it("creates a song via its spotifyId", async function () {
+        it('creates a song via its spotifyId', async function () {
           let createdSong = await lib.createSongViaSpotifyId({
             spotifyUserId: spotifyUser.spotifyUserId,
             spotifyId: songSeed.spotifyId,
@@ -359,7 +365,7 @@ describe("User library functions", function () {
           });
         });
 
-        it("provokes a SONG_CREATED event", async function () {
+        it('provokes a SONG_CREATED event', async function () {
           await lib.createSongViaSpotifyId({
             spotifyUserId: spotifyUser.spotifyUserId,
             spotifyId: songSeed.spotifyId,
@@ -368,7 +374,7 @@ describe("User library functions", function () {
           sinon.assert.calledWith(eventsPublishStub, events.SONG_CREATED);
         });
 
-        it("returns a song if it already exists", async function () {
+        it('returns a song if it already exists', async function () {
           let existingSong = await createSong(db, {
             spotifyId: songSeed.spotifyId,
           });
@@ -380,8 +386,8 @@ describe("User library functions", function () {
         });
       });
 
-      describe("createSong", function () {
-        it("creates a song", async function () {
+      describe('createSong', function () {
+        it('creates a song', async function () {
           let createdSong = await createDefaultSong();
           const expectedProps = defaultProps();
           assert.equal(createdSong.title, expectedProps.title);
@@ -404,22 +410,22 @@ describe("User library functions", function () {
           assert.equal(createdSong.imageUrl, expectedProps.imageUrl);
         });
 
-        it("only updates if a matching isrc exists", async function () {
+        it('only updates if a matching isrc exists', async function () {
           let expectedProps = defaultProps();
           let existingSong = await createDefaultSong({
-            title: "dummy",
-            artist: "dummy",
-            album: "dummy",
+            title: 'dummy',
+            artist: 'dummy',
+            album: 'dummy',
             durationMS: 1,
             popularity: 90,
-            youTubeId: "dummy",
+            youTubeId: 'dummy',
             endOfMessageMS: 1,
             beginningOfOutroMS: 1,
             endOfIntroMS: 1,
-            audioUrl: "dummy",
+            audioUrl: 'dummy',
             isrc: expectedProps.isrc,
-            spotifyId: "dummy",
-            imageUrl: "dummy",
+            spotifyId: 'dummy',
+            imageUrl: 'dummy',
           });
           let createdSong = await lib.createSong(expectedProps);
           assert.equal(createdSong.title, expectedProps.title);
@@ -448,20 +454,20 @@ describe("User library functions", function () {
           );
         });
 
-        it("only updates if a matching spotifyId exists", async function () {
+        it('only updates if a matching spotifyId exists', async function () {
           let expectedProps = defaultProps();
           let existingSong = await createDefaultSong({
-            title: "dummy",
-            artist: "dummy",
-            album: "dummy",
+            title: 'dummy',
+            artist: 'dummy',
+            album: 'dummy',
             durationMS: 1,
             popularity: 80,
-            youTubeId: "dummy",
+            youTubeId: 'dummy',
             endOfMessageMS: 1,
             beginningOfOutroMS: 1,
             endOfIntroMS: 1,
-            audioUrl: "dummy",
-            isrc: "dummy",
+            audioUrl: 'dummy',
+            isrc: 'dummy',
             spotifyId: expectedProps.spotifyId,
           });
 
@@ -491,65 +497,65 @@ describe("User library functions", function () {
           );
         });
 
-        it("does not trigger the SONG_CREATED event if the song was only updated", async function () {
+        it('does not trigger the SONG_CREATED event if the song was only updated', async function () {
           let expectedProps = defaultProps();
           await createDefaultSong({
-            title: "dummy",
-            artist: "dummy",
-            album: "dummy",
+            title: 'dummy',
+            artist: 'dummy',
+            album: 'dummy',
             durationMS: 1,
-            youTubeId: "dummy",
+            youTubeId: 'dummy',
             endOfMessageMS: 1,
             beginningOfOutroMS: 1,
             endOfIntroMS: 1,
-            audioUrl: "dummy",
-            isrc: "dummy",
+            audioUrl: 'dummy',
+            isrc: 'dummy',
             spotifyId: expectedProps.spotifyId,
           });
           await lib.createSong(expectedProps);
           sinon.assert.notCalled(eventsPublishStub);
         });
 
-        it("triggers a SONG_CREATED event if the song was created", async function () {
+        it('triggers a SONG_CREATED event if the song was created', async function () {
           await lib.createSong(defaultProps());
           sinon.assert.calledOnce(eventsPublishStub);
           sinon.assert.calledWith(eventsPublishStub, events.SONG_CREATED);
         });
 
-        describe("Requires Song Consolidation", function () {
+        describe('Requires Song Consolidation', function () {
           let expectedProps, song1, song2;
 
           beforeEach(async function () {
             expectedProps = defaultProps();
             song1 = await createDefaultSong({
-              title: "dummy",
-              artist: "dummy",
-              album: "dummy",
+              title: 'dummy',
+              artist: 'dummy',
+              album: 'dummy',
               durationMS: 1,
-              youTubeId: "dummy",
+              youTubeId: 'dummy',
               endOfMessageMS: 1,
               beginningOfOutroMS: 1,
               endOfIntroMS: 1,
-              audioUrl: "dummy",
+              audioUrl: 'dummy',
               isrc: undefined,
               spotifyId: expectedProps.spotifyId,
             });
             song2 = await createDefaultSong({
-              title: "dummy2",
-              artist: "dummy2",
-              album: "dummy2",
+              title: 'dummy2',
+              artist: 'dummy2',
+              album: 'dummy2',
               durationMS: 2,
-              youTubeId: "dummy2",
+              youTubeId: 'dummy2',
               endOfMessageMS: 2,
               beginningOfOutroMS: 2,
               endOfIntroMS: 2,
-              audioUrl: "dummy2",
+              audioUrl: 'dummy2',
               isrc: expectedProps.isrc,
               spotifyId: undefined,
             });
           });
 
-          it("consolidates if spotifyId and isrc exist", async function () {
+          it('consolidates if spotifyId and isrc exist', async function () {
             let createdSong = await lib.createSong(expectedProps);
 
             assert.equal(createdSong.title, expectedProps.title);
@@ -576,7 +582,7 @@ describe("User library functions", function () {
             assert.equal(shouldBeEmpty.length, 0);
           });
 
-          it("triggers a SONG_CONSOLIDATED event if songs were consolidated", async function () {
+          it('triggers a SONG_CONSOLIDATED event if songs were consolidated', async function () {
             let createdSong = await lib.createSong(expectedProps);
             const oldID = createdSong.id == song1.id ? song2.id : song1.id;
             sinon.assert.calledOnce(eventsPublishStub);
@@ -592,8 +598,8 @@ describe("User library functions", function () {
         });
       });
 
-      describe("Edit Song", function () {
-        it("Updates a song", async function () {
+      describe('Edit Song', function () {
+        it('Updates a song', async function () {
           let song = await createDefaultSong();
           let expectedProps = defaultProps();
           let updatedSong = await lib.updateSong(song.id, expectedProps);
@@ -617,7 +623,7 @@ describe("User library functions", function () {
         });
       });
 
-      describe("initializeSongsForUser", function () {
+      describe('initializeSongsForUser', function () {
         let spotifyLibStub, songSeeds, user;
 
         beforeEach(async function () {
@@ -628,7 +634,7 @@ describe("User library functions", function () {
           await createDefaultSong(songSeeds[0]);
 
           spotifyLibStub = sinon
-            .stub(spotifyLib, "getUserRelatedSongSeeds")
+            .stub(spotifyLib, 'getUserRelatedSongSeeds')
             .resolves(songSeeds);
         });
 
@@ -636,7 +642,7 @@ describe("User library functions", function () {
           nock.cleanAll();
         });
 
-        it("initializes songs for a user", async function () {
+        it('initializes songs for a user', async function () {
           var { stationSongs } = await lib.initializeSongsForUser({ user });
 
           let songs = stationSongs.map((stationSong) => stationSong.song);

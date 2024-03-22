@@ -1,36 +1,35 @@
-const axios = require("axios");
-const { logAndReturnError } = require("../../logger");
+const axios = require('axios');
+const { logAndReturnError } = require('../../logger');
 const authHeader =
-  "Basic " +
+  'Basic ' +
   Buffer.from(
-    process.env.SPOTIFY_CLIENT_ID + ":" + process.env.SPOTIFY_CLIENT_SECRET
-  ).toString("base64");
-const TokenExchange = require("./spotify.tokenExchange");
-const exponentialBackoff = require("../../utils/exponentialBackoff");
-const db = require("../../db");
+    process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
+  ).toString('base64');
+const TokenExchange = require('./spotify.tokenExchange');
+const exponentialBackoff = require('../../utils/exponentialBackoff');
+const db = require('../../db');
 const api = axios.create({
-  baseURL: "https://api.spotify.com",
+  baseURL: 'https://api.spotify.com',
   headers: { Authorization: authHeader },
 });
 
 const SPOTIFY_SCOPES = [
-  "playlist-read-private",
-  "playlist-modify-private",
-  "user-library-read",
-  "user-follow-read",
-  "user-library-modify",
-  "user-top-read",
-  "user-read-currently-playing",
-  "user-read-recently-played",
-  "ugc-image-upload",
-  "user-read-birthdate",
-  "user-read-email",
-].join(" ");
+  'playlist-read-collaborative',
+  'user-follow-read',
+  'user-read-playback-position',
+  'user-top-read',
+  'user-read-recently-played',
+  'user-library-read',
+  'user-read-email',
+  'user-read-currently-playing',
+  'user-modify-playback-state',
+  'user-read-playback-state',
+].join(',');
 
 const TopTracksTimeRange = {
-  LONG_TERM: "long_term",
-  MEDIUM_TERM: "medium_term",
-  SHORT_TERM: "short_term",
+  LONG_TERM: 'long_term',
+  MEDIUM_TERM: 'medium_term',
+  SHORT_TERM: 'short_term',
 };
 
 api.interceptors.response.use(
@@ -52,13 +51,13 @@ api.interceptors.response.use(
       });
       error.config.__newAccessToken = responseBody.access_token;
       error.config.headers[
-        "Authorization"
+        'Authorization'
       ] = `Bearer ${responseBody.access_token}`;
       return api.request(error.config);
     } else if (
-      error.response.status === 429 ||
-      error.code === "ECONNREFUSED" ||
-      error.code === "ETIMEDOUT"
+      error.response?.status === 429 ||
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ETIMEDOUT'
     ) {
       return exponentialBackoff(api, error);
     }
@@ -69,7 +68,7 @@ api.interceptors.response.use(
 function getMe({ accessToken, refreshToken }) {
   return new Promise((resolve, reject) => {
     api
-      .get("/v1/me", configFromTokens({ accessToken, refreshToken }))
+      .get('/v1/me', configFromTokens({ accessToken, refreshToken }))
       .then((res) => resolve(res.data))
       .catch((err) => reject(logAndReturnError(err)));
   });
@@ -78,7 +77,7 @@ function getMe({ accessToken, refreshToken }) {
 function getRecentlyPlayedTracks({ accessToken, refreshToken, limit = 50 }) {
   return new Promise((resolve, reject) => {
     api
-      .get("/v1/me/player/recently-played", {
+      .get('/v1/me/player/recently-played', {
         params: { limit },
         ...configFromTokens({ accessToken, refreshToken }),
       })
@@ -107,7 +106,7 @@ function getUsersTopTracks({
   return new Promise((resolve, reject) => {
     const params = { time_range: timeRange, limit };
     api
-      .get("/v1/me/top/tracks", {
+      .get('/v1/me/top/tracks', {
         params,
         ...configFromTokens({ accessToken, refreshToken }),
       })
@@ -125,7 +124,7 @@ function getUsersSavedTracks({
   return new Promise((resolve, reject) => {
     const params = { limit, offset };
     api
-      .get("/v1/me/tracks", {
+      .get('/v1/me/tracks', {
         params,
         ...configFromTokens({ accessToken, refreshToken }),
       })
@@ -137,12 +136,12 @@ function getUsersSavedTracks({
 function getRecommendedTracks({ seed_artists, seed_tracks, limit = 100 }) {
   return new Promise((resolve, reject) => {
     const params = {
-      seed_artists: seed_artists ? seed_artists.join(",") : undefined,
-      seed_tracks: seed_tracks ? seed_tracks.join(",") : undefined,
+      seed_artists: seed_artists ? seed_artists.join(',') : undefined,
+      seed_tracks: seed_tracks ? seed_tracks.join(',') : undefined,
       limit,
     };
     api
-      .get("/v1/recommendations", { params })
+      .get('/v1/recommendations', { params })
       .then((response) => resolve(response.data))
       .catch((err) => reject(logAndReturnError(err)));
   });

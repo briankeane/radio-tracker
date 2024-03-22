@@ -7,6 +7,7 @@ services:
 
   postgres:
     container_name: "postgres"
+    user: postgres
     build: ./docker/postgres
     ports:
       - "5432:5432"
@@ -16,6 +17,12 @@ services:
       POSTGRES_MULTIPLE_DATABASES: serverdev,servertest
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pass
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready","-u", "postgres", "-d", "serverdev"]
+      interval: 1s
+      timeout: 60s
+      retries: 5
+      start_period: 80s  
 
   rabbitmq:
     container_name: "rabbitmq"
@@ -83,8 +90,24 @@ services:
       - ./server:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+        
     env_file:
       - ./server/.env
     command: ["npm", "run", "migrate:all"]
+
+  client:
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+    command: npm run dev
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - path: ./client/.env
+        required: false
+    ports:
+      - 3000:3000
+      - 3010:3010

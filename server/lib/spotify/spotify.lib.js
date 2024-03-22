@@ -1,7 +1,7 @@
-const spotifyService = require("../spotify/spotify.service");
+const spotifyService = require('../spotify/spotify.service');
 const { TopTracksTimeRange } = spotifyService;
-const db = require("../../db");
-const { logAndReturnError } = require("../../logger");
+const db = require('../../db');
+const { logAndReturnError } = require('../../logger');
 
 const UserAffinity = {
   SAVED_TRACKS: 0.6,
@@ -42,9 +42,9 @@ function getPlayolaUserSeed({ accessToken, refreshToken }) {
 /*
  * A User is automatically created anytime a SpotifyUser is created.
  */
-async function createSpotifyUser({ accessToken, refreshToken }) {
+async function findOrCreateSpotifyUser({ accessToken, refreshToken }) {
   let rawProfile = await spotifyService.getMe({ accessToken, refreshToken });
-  const spotifyUserId = rawProfile["id"];
+  const spotifyUserId = rawProfile['id'];
   const [spotifyUser, _] = await db.models.SpotifyUser.findOrCreate({
     where: { spotifyUserId },
     defaults: { accessToken, refreshToken, spotifyUserId },
@@ -204,8 +204,8 @@ async function padWithSimilarSongs({ tracks, minimum = 150 }) {
   function createArtistArray(tracks) {
     const artistInfo = {};
     for (let track of tracks) {
-      if (!track["artists"] || !track["artists"].length) continue;
-      let artist = track["artists"][0];
+      if (!track['artists'] || !track['artists'].length) continue;
+      let artist = track['artists'][0];
       if (!artistInfo[artist.id]) artistInfo[artist.id] = { artist, count: 0 };
       artistInfo[artist.id].count += 1;
     }
@@ -252,7 +252,7 @@ function spotifyTracksToSongSeeds(tracks) {
 }
 
 module.exports = {
-  createSpotifyUser,
+  findOrCreateSpotifyUser,
 
   getPlayolaUserSeed,
   updateTokens,
@@ -262,5 +262,5 @@ module.exports = {
 
   getUserRelatedSongSeeds,
   getSongSeedFromSpotifyId,
-  SPOTIFY_SCOPES: require("./spotify.service").SPOTIFY_SCOPES,
+  SPOTIFY_SCOPES: require('./spotify.service').SPOTIFY_SCOPES,
 };

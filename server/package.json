@@ -19,7 +19,8 @@
     "start": "node server.js --experimental-specifier-resolution=node",
     "dev": "nodemon -L server.js",
     "worker": "nodemon -L worker.js",
-    "debug": "nodemon --inspect=0.0.0.0:9229 -L server.js"
+    "debug": "nodemon --inspect=0.0.0.0:9229 -L server.js",
+    "build": "npm run migrate"
   },
   "repository": {
     "type": "git",

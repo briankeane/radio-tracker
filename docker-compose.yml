@@ -97,17 +97,18 @@ services:
       - ./server/.env
     command: ["npm", "run", "migrate:all"]
 
-  client:
-    build: 
-      context: ./client
-      dockerfile: Dockerfile
-    command: npm run dev
-    volumes:
-      - ./client:/usr/src/app
-      - /usr/src/app/node_modules
-    env_file:
-      - path: ./client/.env
-        required: false
-    ports:
-      - 3000:3000
-      - 3010:3010
+  ##  Uncomment if adding client
+  # client:
+  #   build: 
+  #     context: ./client
+  #     dockerfile: Dockerfile
+  #   command: npm run dev
+  #   volumes:
+  #     - ./client:/usr/src/app
+  #     - /usr/src/app/node_modules
+  #   env_file:
+  #     - path: ./client/.env
+  #       required: false
+  #   ports:
+  #     - 3000:3000
+  #     - 3010:3010

@@ -9,7 +9,6 @@
 
 * Install [Docker](https://www.docker.com/products/docker-desktop/)
 * Create .env files in the following locations:
-  * `./client/.env`  -- example file at `./client/.env-example`
   * `./server/.env`  -- example file at `./server/.env-example`
 * Running the following command from the root should install all containers and connect them together.
 

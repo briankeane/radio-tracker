@@ -1,16 +1,16 @@
-const Sequelize = require("sequelize");
-const logger = require("../logger");
-const dbConfig = require("./config")[process.env.NODE_ENV];
+const Sequelize = require('sequelize');
+const logger = require('../logger');
+const dbConfig = require('./config')[process.env.NODE_ENV];
 const sequelize = new Sequelize(dbConfig.url, {
   ...dbConfig,
   logger,
 });
 
-const User = require("./models/user.model");
-const SpotifyUser = require("./models/spotifyUser.model");
-const AudioBlock = require("./models/audioBlock.model");
-const StationSong = require("./models/stationSong.model/stationSong.model");
-const Spin = require("./models/spin.model");
+const Station = require('./models/station.model');
+const Song = require('./models/song.model');
+const Spin = require('./models/spin.model');
+const SearchTerm = require('./models/searchTerm.model');
+const PollResult = require('./models/pollResult.model/pollResult.model');
 
 function minutesAgo(minutes) {
   return new Date(new Date().getTime() - minutes * 60 * 1000);
@@ -21,92 +21,19 @@ function minutesFromNow(minutes) {
 }
 
 /*
- * AudioBlock sub-models
- */
-const Song = AudioBlock.scope("songs");
-Song.create = (attrs) => AudioBlock.create({ ...attrs, ...{ type: "song" } });
-
-const Commercial = AudioBlock.scope("commercials");
-Commercial.create = (attrs) =>
-  AudioBlock.create({
-    ...{ title: "Commercial", artist: "------" }, // defaults
-    ...attrs,
-    ...{ type: "commercial" },
-  });
-
-const VoiceTrack = AudioBlock.scope("voicetracks");
-VoiceTrack.create = (attrs) =>
-  AudioBlock.create({
-    ...{ title: "VoiceTrack", artist: "------" }, // defaults
-    ...attrs,
-    ...{ type: "voicetrack" },
-  });
-
-StationSong.findAllActive = async ({ userId }) => {
-  return await StationSong.findAll({
-    where: { userId: userId },
-    include: [
-      {
-        model: Song,
-        as: "song",
-      },
-    ],
-  });
-};
-
-Spin.getPlaylist = async ({ userId, extended = false }) => {
-  let untilTime = extended ? minutesFromNow(200) : minutesFromNow(15);
-  return await Spin.findAll({
-    where: {
-      userId,
-      airtime: { [Sequelize.Op.between]: [minutesAgo(15), untilTime] },
-    },
-    order: [["playlistPosition", "ASC"]],
-    include: [{ model: AudioBlock }],
-  });
-};
-
-Spin.getFullPlaylist = async ({ userId }) => {
-  return await Spin.findAll({
-    where: {
-      userId,
-    },
-    order: [["playlistPosition", "ASC"]],
-    include: [{ model: AudioBlock }],
-  });
-};
-
-/*
  * Relationships
  */
-User.belongsToMany(AudioBlock, { through: StationSong });
-AudioBlock.belongsToMany(User, {
-  through: StationSong,
-  foreignKey: "songId",
-  alias: "song",
-});
-User.hasMany(StationSong, { onDelete: "CASCADE" });
-AudioBlock.hasMany(StationSong, {
-  onDelete: "CASCADE",
-  foreignKey: "songId",
-  alias: "song",
-});
-StationSong.belongsTo(User);
-StationSong.belongsTo(AudioBlock, { foreignKey: "songId", as: "song" });
-
-Spin.belongsTo(User);
-Spin.belongsTo(AudioBlock);
-User.hasMany(Spin);
+// Song.belongsToMany(Station, { through: Spin });
+Song.hasMany(SearchTerm);
+SearchTerm.hasOne(Song);
+PollResult.hasOne(SearchTerm);
 
 const models = {
-  User,
-  SpotifyUser,
-  AudioBlock,
   Song,
-  Commercial,
-  VoiceTrack,
-  StationSong,
   Spin,
+  Station,
+  SearchTerm,
+  PollResult,
 };
 
 module.exports = { sequelize, db: sequelize, models };

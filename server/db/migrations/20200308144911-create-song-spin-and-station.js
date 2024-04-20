@@ -1,27 +1,40 @@
-"use strict";
+'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return Promise.all([
-      queryInterface.createTable("spotifyUsers", {
+      queryInterface.createTable('songs', {
         id: {
           type: Sequelize.UUID,
           primaryKey: true,
           defaultValue: Sequelize.UUIDV4,
           allowNull: false,
           autoIncrement: false,
-          onUpdate: "CASCADE",
-          onDelete: "CASCADE",
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE',
         },
-        spotifyUserId: {
+        title: {
+          allowNull: true,
           type: Sequelize.STRING,
-          unique: true,
-          allowNull: false,
         },
-        accessToken: {
-          type: Sequelize.STRING(512),
+        itunesTrackId: {
+          allowNull: true,
+          type: Sequelize.STRING,
         },
-        refreshToken: {
-          type: Sequelize.STRING(512),
+        artist: {
+          allowNull: true,
+          type: Sequelize.STRING,
+        },
+        album: {
+          allowNull: true,
+          type: Sequelize.STRING,
+        },
+        itunesTrackViewUrl: {
+          allowNull: true,
+          type: Sequelize.STRING,
+        },
+        artworkUrl: {
+          allowNull: true,
+          type: Sequelize.STRING,
         },
         createdAt: {
           allowNull: false,
@@ -32,7 +45,7 @@ module.exports = {
           type: Sequelize.DATE,
         },
       }),
-      queryInterface.createTable("users", {
+      queryInterface.createTable('stations', {
         id: {
           type: Sequelize.UUID,
           primaryKey: true,
@@ -40,29 +53,15 @@ module.exports = {
           allowNull: false,
           autoIncrement: false,
         },
-        displayName: {
+        name: {
           type: Sequelize.STRING,
         },
-        deepLink: {
+        streamUrl: {
           type: Sequelize.STRING,
         },
-        email: {
+        streamSource: {
           type: Sequelize.STRING,
-          unique: true,
-          allowNull: false,
-        },
-        profileImageUrl: {
-          type: Sequelize.STRING,
-        },
-        role: {
-          type: Sequelize.ENUM("admin", "user", "guest"),
-          allowNull: false,
-          defaultValue: "user",
-        },
-        spotifyUserId: {
-          type: Sequelize.STRING,
-          unique: true,
-          allowNull: false,
+          allowNull: true,
         },
         createdAt: {
           allowNull: false,
@@ -77,8 +76,8 @@ module.exports = {
   },
   down: (queryInterface, Sequelize) => {
     return Promise.all([
-      queryInterface.dropTable("spotifyUsers"),
-      queryInterface.dropTable("users"),
+      queryInterface.dropTable('songs'),
+      queryInterface.dropTable('stations'),
     ]);
   },
 };

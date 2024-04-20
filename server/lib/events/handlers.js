@@ -3,7 +3,6 @@ const eventStream = require('./index.js');
 const logger = require('../../logger');
 const db = require('../../db');
 const lib = require('../lib');
-const playlistGenerator = require('../playlists/playlistGenerator');
 
 /*
  * When a user is created, created their songs and StationSongs

@@ -41,10 +41,5 @@ const Song = sequelize.define('song', {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  searchTerm: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    unique: true,
-  },
 });
 module.exports = Song;

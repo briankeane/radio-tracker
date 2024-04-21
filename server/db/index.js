@@ -23,10 +23,14 @@ function minutesFromNow(minutes) {
 /*
  * Relationships
  */
-// Song.belongsToMany(Station, { through: Spin });
 Song.hasMany(SearchTerm);
-SearchTerm.hasOne(Song);
-PollResult.hasOne(SearchTerm);
+SearchTerm.belongsTo(Song);
+
+PollResult.belongsTo(SearchTerm);
+SearchTerm.hasMany(PollResult);
+
+// PollResult.belongsTo(Song, { through: SearchTerm });
+// Song.belongsToMany(PollResult, { through: SearchTerm });
 
 const models = {
   Song,

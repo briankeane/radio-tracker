@@ -9,6 +9,19 @@ var StreamSource = {
   ICECAST: 'ICECAST',
 };
 
+function getStationInfoPromise({ url, method }) {
+  return new Promise((resolve, reject) => {
+    getStationInfo(
+      url,
+      (err, result) => {
+        if (err) return reject(err);
+        return resolve(result);
+      },
+      method
+    );
+  });
+}
+
 function getStationInfo(url, callback, method) {
   var methodHandler = undefined;
 
@@ -70,6 +83,7 @@ function getStationInfo(url, callback, method) {
       return new Promise((resolve, reject) => {
         try {
           shoutcast.getShoutcastV1Station(url, function (error, station) {
+            if (!station) return resolve();
             resolve({ ...station, streamSource: StreamSource.SHOUTCAST_V1 });
           });
         } catch (err) {
@@ -81,6 +95,7 @@ function getStationInfo(url, callback, method) {
       return new Promise((resolve, reject) => {
         try {
           shoutcast.getShoutcastV2Station(url, function (error, station) {
+            if (!station) return resolve();
             resolve({ ...station, streamSource: StreamSource.SHOUTCAST_V2 });
           });
         } catch (err) {
@@ -92,6 +107,7 @@ function getStationInfo(url, callback, method) {
       return new Promise((resolve, reject) => {
         try {
           icystream.getStreamStation(url, function (error, station) {
+            if (!station) return resolve();
             resolve({ ...station, streamSource: StreamSource.STREAM });
           });
         } catch (err) {
@@ -103,6 +119,7 @@ function getStationInfo(url, callback, method) {
       return new Promise((resolve, reject) => {
         try {
           icecast.getIcecastStation(url, function (error, station) {
+            if (!station) return resolve();
             resolve({ ...station, streamSource: StreamSource.ICECAST });
           });
         } catch (err) {
@@ -115,3 +132,4 @@ function getStationInfo(url, callback, method) {
 
 module.exports.StreamSource = StreamSource;
 module.exports.getStationInfo = getStationInfo;
+module.exports.getStationInfoPromise = getStationInfoPromise;

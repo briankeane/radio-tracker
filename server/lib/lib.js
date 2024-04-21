@@ -12,8 +12,9 @@ const promisify =
     });
 
 const db = require('../db');
-const internetradio = promisify(require('../streamReader').getStationInfo);
+const internetradio = require('../streamReader').getStationInfoPromise;
 const axios = require('axios');
+const PollResult = require('../db/models/pollResult.model/pollResult.model');
 
 async function createStation({ name, streamUrl }) {
   // get the stream source
@@ -33,7 +34,10 @@ async function getStation(stationId) {
 async function executePoll({ station }) {
   let stationInfo;
   try {
-    stationInfo = await internetradio(station.streamUrl, null);
+    stationInfo = await internetradio({
+      url: station.streamUrl,
+      streamSource: station.streamSource,
+    });
   } catch (err) {
     console.error(err);
     return await db.models.PollResult.create({
@@ -48,18 +52,34 @@ async function executePoll({ station }) {
     });
   }
 
-  var searchTerm = await db.models.findOne({
-    where: { searchTerm: searchTermText },
+  var searchTerm = await db.models.SearchTerm.findOne({
+    where: { text: stationInfo.title },
   });
 
   if (searchTerm) {
-    return await db.models.PollResult.create({
+    console.log('searchTerm found!');
+    var searchResult = await db.models.PollResult.create({
       stationId: station.id,
-      searchTerm,
+      searchTermId: searchTerm.id,
+    });
+    return await db.models.PollResult.findByPk(searchResult.id, {
+      include: [{ all: true, nested: true }],
     });
   }
 
-  return await findOrCreateSearchTerm(searchTermString);
+  searchTerm = await findOrCreateSearchTerm(stationInfo.title);
+  console.log('searchTerm: ', searchTerm);
+
+  const poll = await db.models.PollResult.create({
+    stationId: station.id,
+    searchTermId: searchTerm.id,
+  });
+
+  console.log('poll: ', poll);
+  const foundPoll = await db.models.PollResult.findByPk(poll.id, {
+    include: [{ all: true, nested: true }],
+  });
+  return { foundPoll, searchTerm };
 }
 
 async function findOrCreateSearchTerm(searchTermString) {
@@ -67,30 +87,29 @@ async function findOrCreateSearchTerm(searchTermString) {
     where: { text: searchTermString },
     include: db.models.Song,
   });
+  console.log('searchTerm inside findOrCreateSearchTerm: ', searchTerm);
 
   if (searchTerm) {
     return searchTerm;
   }
 
   var songInfo = await searchFromMetadata(searchTermString);
+  console.log('songInfo: ', songInfo);
   var track = songInfo?.results?.[0];
+  var song;
   if (track) {
     var songInfo = songPropertiesFromTrack(track);
-    await db.models.Song.findOrCreate({
-      where: { itunesTrackId: track.itunesTrackId },
+    const [song, created] = await db.models.Song.findOrCreate({
+      where: { itunesTrackId: songInfo.itunesTrackId },
       defaults: {
         ...songInfo,
       },
     });
-    song = await db.models.Song.findOne({
-      where: { itunesTrackId: track.itunesTrackId },
-      include: db.models.Song,
-    });
   }
 
   searchTerm = await db.models.SearchTerm.create({
-    text: searchTermText,
-    songId: song.id,
+    text: searchTermString,
+    songId: song?.id,
   });
 
   return searchTerm;
@@ -98,7 +117,7 @@ async function findOrCreateSearchTerm(searchTermString) {
 
 async function getNowPlayingForUrl(url) {
   console.log('url: ', url);
-  const stationInfo = await internetradio(url, null);
+  const stationInfo = await internetradio({ url });
   console.log(stationInfo);
   const searchTermText = stationInfo.title;
   const searchTerm = await db.models.SearchTerm.findOne({
@@ -114,7 +133,7 @@ async function getNowPlayingForUrl(url) {
   var songProps = songPropertiesFromTrack({ ...itunesResults, searchTerm });
   if (!searchResult?.results?.count) {
     createdSong = await db.models.Song.findOrCreate({
-      where: { searchTerm },
+      where: { searchTermId: searchTerm.id },
       defaults: songProps,
     });
   } else {
@@ -129,7 +148,7 @@ async function getNowPlayingForUrl(url) {
 function songPropertiesFromTrack(track) {
   return {
     title: track.trackName,
-    itunesTrackId: track.trackId,
+    itunesTrackId: String(track.trackId),
     artist: track.artistName,
     album: track.collectionName,
     itunesTrackViewUrl: track.trackViewUrl,

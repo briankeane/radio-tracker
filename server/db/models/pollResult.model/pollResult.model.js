@@ -16,7 +16,7 @@ const PollResult = sequelize.define('pollResult', {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE',
   },
-  // searchTerm: {
+  // searchTermId: {
   //   type: DataTypes.UUID,
   //   references: 'searchTerms',
   //   referencesKey: 'id',
